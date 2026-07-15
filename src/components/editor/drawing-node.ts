@@ -44,6 +44,20 @@ export const DrawingNode = Node.create({
           "data-aspect": attributes.aspect || "16/9",
         }),
       },
+      width: {
+        default: "100%",
+        parseHTML: (element) => element.getAttribute("data-width") || "100%",
+        renderHTML: (attributes) => ({
+          "data-width": attributes.width || "100%",
+        }),
+      },
+      align: {
+        default: "center",
+        parseHTML: (element) => element.getAttribute("data-align") || "center",
+        renderHTML: (attributes) => ({
+          "data-align": attributes.align || "center",
+        }),
+      },
     };
   },
 
@@ -58,12 +72,18 @@ export const DrawingNode = Node.create({
   renderHTML({ HTMLAttributes }) {
     const preview = HTMLAttributes["data-preview-url"] || HTMLAttributes.previewUrl;
     const aspect = HTMLAttributes["data-aspect"] || HTMLAttributes.aspect || "16/9";
+    const width = HTMLAttributes["data-width"] || HTMLAttributes.width || "100%";
+    const align = HTMLAttributes["data-align"] || HTMLAttributes.align || "center";
+
+    let marginStyle = "margin: 0 auto;";
+    if (align === "left") marginStyle = "margin-right: auto; margin-left: 0;";
+    if (align === "right") marginStyle = "margin-left: auto; margin-right: 0;";
 
     return [
       "div",
       mergeAttributes(HTMLAttributes, {
-        class: "drawing-block",
-        style: `aspect-ratio: ${aspect}; background-image: url(${preview}); background-size: contain; background-repeat: no-repeat; background-position: center;`,
+        class: "drawing-block cursor-pointer select-none",
+        style: `aspect-ratio: ${aspect}; background-image: url(${preview}); background-size: contain; background-repeat: no-repeat; background-position: center; width: ${width}; max-width: 100%; display: block; ${marginStyle}`,
       }),
     ];
   },

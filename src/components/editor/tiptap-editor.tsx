@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useEditor, EditorContent, Editor, Content } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
@@ -22,6 +23,12 @@ import {
   Code,
   Minus,
   Palette,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Trash2,
+  Plus,
+  Grid,
 } from "lucide-react";
 import { DrawingNode } from "./drawing-node";
 import { DrawingModal } from "./drawing-modal";
@@ -172,6 +179,30 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
       }),
       Image.configure({
         allowBase64: true,
+      }).extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            width: {
+              default: "100%",
+              renderHTML: (attributes) => {
+                const align = attributes.align || "center";
+                let marginStyle = "margin: 0 auto;";
+                if (align === "left") marginStyle = "margin-right: auto; margin-left: 0;";
+                if (align === "right") marginStyle = "margin-left: auto; margin-right: 0;";
+                return {
+                  style: `width: ${attributes.width || "100%"}; max-width: 100%; height: auto; display: block; ${marginStyle}`,
+                };
+              },
+            },
+            align: {
+              default: "center",
+              renderHTML: (attributes) => ({
+                "data-align": attributes.align || "center",
+              }),
+            },
+          };
+        },
       }),
       Table.configure({
         resizable: true,
@@ -221,7 +252,7 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
           return false;
         },
       },
-      handleClickOn: (view, pos, node) => {
+      handleDoubleClickOn: (view, pos, node) => {
         if (node.type.name === "drawing") {
           const drawingId = node.attrs.drawingId;
           if (drawingId) {
@@ -320,7 +351,7 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
   }, [showMenu]);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full flex flex-col md:flex-row gap-6">
       {/* Invisible file input trigger */}
       <input
         type="file"
@@ -330,7 +361,322 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
         className="hidden"
       />
 
-      <EditorContent editor={editor} className="min-h-[400px] pb-32" />
+      {/* Floating Side Toolbar - Responsive */}
+      {editor && (
+        <div className="flex md:flex-col items-center gap-1.5 p-1.5 bg-surface border border-border rounded-16 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mb-4 md:mb-0 md:sticky md:top-20 md:self-start z-10 w-fit shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            title="Heading 1"
+          >
+            <Heading1 className="w-4 h-4 text-muted" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            title="Heading 2"
+          >
+            <Heading2 className="w-4 h-4 text-muted" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            title="Heading 3"
+          >
+            <Heading3 className="w-4 h-4 text-muted" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            title="Bullet List"
+          >
+            <Grid className="w-4 h-4 text-muted" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            title="Blockquote"
+          >
+            <Quote className="w-4 h-4 text-muted" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+            title="Insert Table"
+          >
+            <TableIcon className="w-4 h-4 text-muted" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload Image"
+          >
+            <ImageIcon className="w-4 h-4 text-muted" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-accent bg-accent/8 border border-accent/20 cursor-pointer"
+            onClick={() => handleTriggerDrawing(null)}
+            title="Insert Sketch Drawing"
+          >
+            <Palette className="w-4 h-4 text-accent" />
+          </Button>
+        </div>
+      )}
+
+      {/* Editor Body Wrapper */}
+      <div className="flex-1 min-w-0 relative">
+        <EditorContent editor={editor} className="min-h-[400px] pb-16" />
+
+        {/* Dynamic Bubble Menu for Tables */}
+        {editor && (
+          <BubbleMenu
+            editor={editor}
+            shouldShow={({ editor }) => editor.isActive("table")}
+          >
+            <Card className="flex flex-wrap items-center gap-1.5 p-1.5 bg-surface border border-border shadow-lg rounded-12 select-none max-w-[90vw]">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().addRowBefore().run()}
+              >
+                <Plus className="w-3.5 h-3.5 text-muted" />
+                Row Above
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().addRowAfter().run()}
+              >
+                <Plus className="w-3.5 h-3.5 text-muted" />
+                Row Below
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().addColumnBefore().run()}
+              >
+                <Plus className="w-3.5 h-3.5 text-muted" />
+                Col Left
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().addColumnAfter().run()}
+              >
+                <Plus className="w-3.5 h-3.5 text-muted" />
+                Col Right
+              </Button>
+              <div className="h-4 w-[1px] bg-border/60 mx-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-red-600 cursor-pointer"
+                onClick={() => editor.chain().focus().deleteRow().run()}
+              >
+                Delete Row
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-red-600 cursor-pointer"
+                onClick={() => editor.chain().focus().deleteColumn().run()}
+              >
+                Delete Col
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-red-600 hover:bg-red-500/10 cursor-pointer"
+                onClick={() => editor.chain().focus().deleteTable().run()}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete Table
+              </Button>
+            </Card>
+          </BubbleMenu>
+        )}
+
+        {/* Dynamic Bubble Menu for Images */}
+        {editor && (
+          <BubbleMenu
+            editor={editor}
+            shouldShow={({ editor }) => editor.isActive("image")}
+          >
+            <Card className="flex items-center gap-1.5 p-1.5 bg-surface border border-border shadow-lg rounded-12 select-none">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("image", { align: "left" }).run()}
+                title="Align Left"
+              >
+                <AlignLeft className="w-4 h-4 text-muted" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("image", { align: "center" }).run()}
+                title="Align Center"
+              >
+                <AlignCenter className="w-4 h-4 text-muted" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("image", { align: "right" }).run()}
+                title="Align Right"
+              >
+                <AlignRight className="w-4 h-4 text-muted" />
+              </Button>
+              
+              <div className="h-4 w-[1px] bg-border/60 mx-1" />
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("image", { width: "25%" }).run()}
+              >
+                25%
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("image", { width: "50%" }).run()}
+              >
+                50%
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("image", { width: "100%" }).run()}
+              >
+                100%
+              </Button>
+            </Card>
+          </BubbleMenu>
+        )}
+
+        {/* Dynamic Bubble Menu for Drawings */}
+        {editor && (
+          <BubbleMenu
+            editor={editor}
+            shouldShow={({ editor }) => editor.isActive("drawing")}
+          >
+            <Card className="flex items-center gap-1.5 p-1.5 bg-surface border border-border shadow-lg rounded-12 select-none">
+              {/* Edit Sketch button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 gap-1.5 hover:bg-border/20 text-accent bg-accent/8 border border-accent/20 cursor-pointer font-medium"
+                onClick={() => {
+                  const drawingId = editor.getAttributes("drawing").drawingId;
+                  if (drawingId) {
+                    handleTriggerDrawing(drawingId);
+                    if (onTriggerDrawing) onTriggerDrawing(drawingId);
+                  }
+                }}
+              >
+                <Palette className="w-3.5 h-3.5 text-accent" />
+                Edit Sketch
+              </Button>
+
+              <div className="h-4 w-[1px] bg-border/60 mx-1" />
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("drawing", { align: "left" }).run()}
+                title="Align Left"
+              >
+                <AlignLeft className="w-4 h-4 text-muted" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("drawing", { align: "center" }).run()}
+                title="Align Center"
+              >
+                <AlignCenter className="w-4 h-4 text-muted" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("drawing", { align: "right" }).run()}
+                title="Align Right"
+              >
+                <AlignRight className="w-4 h-4 text-muted" />
+              </Button>
+              
+              <div className="h-4 w-[1px] bg-border/60 mx-1" />
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("drawing", { width: "25%" }).run()}
+              >
+                25%
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("drawing", { width: "50%" }).run()}
+              >
+                50%
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-13 hover:bg-border/20 text-text cursor-pointer"
+                onClick={() => editor.chain().focus().updateAttributes("drawing", { width: "100%" }).run()}
+              >
+                100%
+              </Button>
+            </Card>
+          </BubbleMenu>
+        )}
+
+        {/* Sketchpad info / quick tip banner */}
+        <div className="border border-dashed border-border/80 rounded-16 p-4 bg-surface/50 text-13 text-muted flex items-start gap-3 mt-6 select-none">
+          <Palette className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-text">How to draw sketches?</span>
+            <span>
+              Click the <strong className="text-accent">Palette</strong> button in the left sidebar to open the Excalidraw Sketchpad.
+              Once drawing is saved, click on the sketch preview block in the editor to select it, show sizing/alignment options, or click <strong className="text-accent">&#39;Edit Sketch&#39;</strong> to modify it. You can also double click the sketch to edit it instantly.
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Popover Slash Command Menu Card */}
       {showMenu && (

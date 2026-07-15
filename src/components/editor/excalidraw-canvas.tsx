@@ -5,6 +5,7 @@ import { Excalidraw, exportToSvg } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import "@excalidraw/excalidraw/index.css";
 
 interface ExcalidrawCanvasProps {
   initialData: unknown; // Excalidraw elements & state JSON
