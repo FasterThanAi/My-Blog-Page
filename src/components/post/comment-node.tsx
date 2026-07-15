@@ -180,7 +180,7 @@ export function CommentNodeComponent({
   const showCollapsePrompt = depth >= 4 && node.children.length > 0 && !isExpanded;
 
   return (
-    <div className="flex flex-col gap-2.5 select-none w-full">
+    <div id={`comment-${node.id}`} className="flex flex-col gap-2.5 select-none w-full scroll-mt-24">
       {/* Target Comment Card Node */}
       <div className="flex gap-3">
         {/* Left Hand vote columns (▲ score ▼) */}

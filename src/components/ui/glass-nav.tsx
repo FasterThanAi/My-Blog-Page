@@ -9,7 +9,7 @@ import { Avatar } from "./avatar";
 import { Button } from "./button";
 import { ThemeToggle } from "./theme-toggle";
 import { Card } from "./card";
-import { LogOut, Settings, Edit } from "lucide-react";
+import { LogOut, Settings, Edit, Bell, Search } from "lucide-react";
 
 interface Profile {
   avatar_url: string | null;
@@ -24,7 +24,24 @@ export function GlassNav() {
   const [profile, setProfile] = React.useState<Profile | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [unreadCount, setUnreadCount] = React.useState(0);
   const menuRef = React.useRef<HTMLDivElement>(null);
+
+  const fetchUnreadCount = React.useCallback(async (uid: string) => {
+    try {
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .is("read_at", null);
+
+      if (!error && count !== null) {
+        setUnreadCount(count);
+      }
+    } catch {
+      // Ignore silently
+    }
+  }, [supabase]);
 
   const fetchProfile = React.useCallback(async (userId: string) => {
     try {
@@ -74,6 +91,47 @@ export function GlassNav() {
   }, [supabase, fetchProfile]);
 
   React.useEffect(() => {
+    if (!user) {
+      const handle = requestAnimationFrame(() => {
+        setUnreadCount(0);
+      });
+      return () => cancelAnimationFrame(handle);
+    }
+
+    const animHandle = requestAnimationFrame(() => {
+      fetchUnreadCount(user.id);
+    });
+
+    // Subscribe to Postgres changes for notifications table
+    const channel = supabase
+      .channel(`nav-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchUnreadCount(user.id!);
+        }
+      )
+      .subscribe();
+
+    // Fallback: 60s poll
+    const pollInterval = setInterval(() => {
+      fetchUnreadCount(user.id!);
+    }, 60000);
+
+    return () => {
+      channel.unsubscribe();
+      clearInterval(pollInterval);
+      cancelAnimationFrame(animHandle);
+    };
+  }, [user, supabase, fetchUnreadCount]);
+
+  React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
@@ -101,13 +159,37 @@ export function GlassNav() {
         </Link>
 
         {/* Right Nav */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Command Palette Trigger */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+            className="p-2 rounded-12 hover:bg-border/20 text-muted hover:text-text cursor-pointer focus-ring"
+            aria-label="Open command palette"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
           <ThemeToggle />
 
           {loading ? (
             <div className="w-[44px] h-[44px] rounded-full bg-border/20 animate-pulse" />
           ) : user ? (
-            <div className="flex items-center gap-4 relative" ref={menuRef}>
+            <div className="flex items-center gap-3 relative" ref={menuRef}>
+              {/* Notifications bell badge */}
+              <Link href="/notifications">
+                <button
+                  className="p-2 rounded-12 hover:bg-border/20 text-muted hover:text-text cursor-pointer focus-ring relative"
+                  aria-label="View notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+              </Link>
+
               <Link href="/write">
                 <Button variant="ghost" size="sm" className="hidden sm:inline-flex items-center gap-2">
                   <Edit className="w-4 h-4" />

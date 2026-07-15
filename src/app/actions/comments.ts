@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { sendNotificationEmail } from "@/lib/email";
 
 const createCommentSchema = z.object({
   postId: z.string().uuid(),
@@ -77,6 +78,34 @@ export async function createCommentAction(input: unknown) {
           post_id: postId,
           comment_id: comment.id,
         });
+
+        // Trigger email notification (asynchronously)
+        try {
+          const { data: actorProfile } = await supabase
+            .from("profiles")
+            .select("display_name, username")
+            .eq("id", user.id)
+            .single();
+
+          const { data: post } = await supabase
+            .from("posts")
+            .select("title")
+            .eq("id", postId)
+            .maybeSingle();
+
+          const actorName = actorProfile?.display_name || actorProfile?.username || "Someone";
+          const postTitle = post?.title || "your post";
+
+          sendNotificationEmail({
+            recipientId: parentComment.author_id,
+            actorName,
+            eventType: "reply",
+            postTitle,
+            commentBody: body.substring(0, 100) + (body.length > 100 ? "..." : ""),
+          }).catch(console.error);
+        } catch (emailErr) {
+          console.error("Email send trigger error:", emailErr);
+        }
       }
     } else {
       // Fetch post author
@@ -96,7 +125,8 @@ export async function createCommentAction(input: unknown) {
         });
       }
     }
-  } catch {
+  } catch (err) {
+    console.error("Notification creation error:", err);
     // Fail silently on notifications logging so core comment transaction succeeds
   }
 

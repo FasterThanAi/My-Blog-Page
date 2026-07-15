@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { sendNotificationEmail } from "@/lib/email";
 
 // Keyset cursor validation schema
 const cursorSchema = z.object({
@@ -282,6 +283,25 @@ export async function toggleFollowAction(input: unknown) {
         actor_id: user.id,
         type: "follow",
       });
+
+      // Trigger email notification (asynchronously)
+      try {
+        const { data: actorProfile } = await supabase
+          .from("profiles")
+          .select("display_name, username")
+          .eq("id", user.id)
+          .single();
+
+        const actorName = actorProfile?.display_name || actorProfile?.username || "Someone";
+
+        sendNotificationEmail({
+          recipientId: followingId,
+          actorName,
+          eventType: "follow",
+        }).catch(console.error);
+      } catch (emailErr) {
+        console.error("Follow email send trigger error:", emailErr);
+      }
     } catch {
       // Fail silently
     }

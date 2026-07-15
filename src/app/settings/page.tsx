@@ -27,6 +27,7 @@ const settingsSchema = z.object({
   website_url: z.string().url("Must be a valid URL").or(z.literal("")).optional().nullable(),
   ai_assistant_enabled: z.boolean(),
   theme_preference: z.enum(["light", "dark", "system"]),
+  email_notifications: z.boolean(),
 });
 
 export default function SettingsPage() {
@@ -46,6 +47,7 @@ export default function SettingsPage() {
   const [websiteUrl, setWebsiteUrl] = React.useState("");
   const [aiEnabled, setAiEnabled] = React.useState(true);
   const [themePreference, setThemePreference] = React.useState<"light" | "dark" | "system">("system");
+  const [emailNotifications, setEmailNotifications] = React.useState(true);
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
 
@@ -75,6 +77,7 @@ export default function SettingsPage() {
         setWebsiteUrl(profile.website_url || "");
         setAiEnabled(profile.ai_assistant_enabled);
         setThemePreference(profile.theme_preference as "light" | "dark" | "system");
+        setEmailNotifications(profile.email_notifications ?? true);
         setAvatarUrl(profile.avatar_url);
       }
       setLoading(false);
@@ -145,6 +148,7 @@ export default function SettingsPage() {
       website_url: websiteUrl || null,
       ai_assistant_enabled: aiEnabled,
       theme_preference: themePreference,
+      email_notifications: emailNotifications,
     });
 
     if (!validation.success) {
@@ -179,6 +183,7 @@ export default function SettingsPage() {
           website_url: websiteUrl || null,
           ai_assistant_enabled: aiEnabled,
           theme_preference: themePreference,
+          email_notifications: emailNotifications,
         })
         .eq("id", userId);
 
@@ -303,6 +308,21 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={aiEnabled}
                   onChange={(e) => setAiEnabled(e.target.checked)}
+                  className="w-5 h-5 rounded-md border-border accent-accent cursor-pointer focus-ring"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between border-t border-border/40 pt-4">
+                <div className="flex flex-col gap-0.5">
+                  <h3 className="text-15 font-semibold text-text">Email Notifications</h3>
+                  <p className="text-13 text-muted">
+                    Receive emails when someone follows you or replies to your comments.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={emailNotifications}
+                  onChange={(e) => setEmailNotifications(e.target.checked)}
                   className="w-5 h-5 rounded-md border-border accent-accent cursor-pointer focus-ring"
                 />
               </div>
