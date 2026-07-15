@@ -42,10 +42,26 @@ export default async function WriteIdPage({ params }: PageProps) {
     ? postTags.map((pt) => pt.tags?.name).filter((name): name is string => typeof name === "string")
     : [];
 
+  // 5. Fetch AI Assistant flags and user settings
+  const { data: flag } = await supabase
+    .from("feature_flags")
+    .select("enabled")
+    .eq("key", "ai_assistant")
+    .single();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("ai_assistant_enabled")
+    .eq("id", user.id)
+    .single();
+
+  const aiEnabled = !!(flag?.enabled && profile?.ai_assistant_enabled);
+
   return (
     <EditorWorkspace
       post={post}
       initialTags={initialTags}
+      aiEnabled={aiEnabled}
     />
   );
 }

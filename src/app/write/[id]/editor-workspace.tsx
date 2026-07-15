@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { TiptapEditor } from "@/components/editor/tiptap-editor";
 import { savePostAction, publishPostAction } from "@/app/actions/posts";
+import { Editor } from "@tiptap/react";
+import { AiPanel } from "@/components/editor/ai-panel";
 import {
   ArrowLeft,
   EyeOff,
@@ -28,6 +30,7 @@ import {
 interface PostData {
   id: string;
   title: string;
+  author_id: string;
   content: unknown;
   cover_image_url?: string | null;
   excerpt?: string | null;
@@ -40,6 +43,7 @@ interface PostData {
 interface EditorWorkspaceProps {
   post: PostData;
   initialTags: string[];
+  aiEnabled?: boolean;
 }
 
 interface TiptapNode {
@@ -60,9 +64,12 @@ function extractPlainText(node: TiptapNode): string {
   return "";
 }
 
-export function EditorWorkspace({ post, initialTags }: EditorWorkspaceProps) {
+export function EditorWorkspace({ post, initialTags, aiEnabled = false }: EditorWorkspaceProps) {
   const router = useRouter();
   const { toast } = useToast();
+
+  const [aiSessionOpen, setAiSessionOpen] = React.useState(true);
+  const [editorInstance, setEditorInstance] = React.useState<Editor | null>(null);
 
   // Document State
   const [title, setTitle] = React.useState(post.title || "");
@@ -299,24 +306,46 @@ export function EditorWorkspace({ post, initialTags }: EditorWorkspaceProps) {
       </div>
 
       {/* Editor Content Area */}
-      <div className="flex-1 flex justify-center py-12 px-6">
-        <div className="w-full max-w-[720px] flex flex-col">
-          {/* Title Input field */}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Untitled Post"
-            className="text-32 md:text-40 font-semibold bg-transparent text-text placeholder:text-muted/40 outline-none border-b border-transparent focus:border-border/30 w-full mb-6 py-2 transition-all leading-tight"
-          />
+      <div className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 py-12 flex gap-8 items-start relative">
+        <div className="flex-1 min-w-0 flex flex-col items-center">
+          <div className="w-full max-w-[720px] flex flex-col">
+            {/* Title Input field */}
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Untitled Post"
+              className="text-32 md:text-40 font-semibold bg-transparent text-text placeholder:text-muted/40 outline-none border-b border-transparent focus:border-border/30 w-full mb-6 py-2 transition-all leading-tight"
+            />
 
-          {/* Tiptap Rich Text Editor */}
-          <TiptapEditor
-            postId={post.id}
-            initialContent={content}
-            onChange={setContent}
-          />
+            {/* Tiptap Rich Text Editor */}
+            <TiptapEditor
+              postId={post.id}
+              initialContent={content}
+              onChange={setContent}
+              aiEnabled={aiEnabled}
+              aiSessionOpen={aiSessionOpen && aiEnabled}
+              onToggleAiSession={() => setAiSessionOpen(!aiSessionOpen)}
+              editorRef={setEditorInstance}
+            />
+          </div>
         </div>
+
+        {/* AI Assistant Sidebar Panel */}
+        {aiEnabled && aiSessionOpen && (
+          <AiPanel
+            editor={editorInstance}
+            onApplyTitle={(newTitle) => {
+              setTitle(newTitle);
+              setSeoTitle(newTitle);
+            }}
+            onApplyDescription={(newDesc) => {
+              setSeoDescription(newDesc);
+              setExcerpt(newDesc);
+              setPublishSheetOpen(true);
+            }}
+          />
+        )}
       </div>
 
       {/* Publish Options Slide Sheet */}

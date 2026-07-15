@@ -6,6 +6,10 @@ const envSchema = z.object({
   RESEND_API_KEY: typeof window === "undefined"
     ? z.string().min(1, "RESEND_API_KEY is required on server")
     : z.string().optional(),
+  GEMINI_API_KEY: typeof window === "undefined"
+    ? z.string().min(1, "GEMINI_API_KEY is required on server")
+    : z.string().optional(),
+  GEMINI_MODEL: z.string().optional().default("gemini-3.5-flash"),
 });
 
 const getEnv = () => {
@@ -13,6 +17,8 @@ const getEnv = () => {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL,
   });
 
   if (!result.success) {

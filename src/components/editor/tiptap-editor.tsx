@@ -29,9 +29,13 @@ import {
   Trash2,
   Plus,
   Grid,
+  Sparkles,
 } from "lucide-react";
+import { TextSelection } from "@tiptap/pm/state";
 import { DrawingNode } from "./drawing-node";
 import { DrawingModal } from "./drawing-modal";
+import { AiSuggestion } from "./ai-suggestion";
+import { GhostText } from "./ghost-text";
 
 // Initialize syntax highlighting
 const lowlight = createLowlight(common);
@@ -41,9 +45,22 @@ interface TiptapEditorProps {
   initialContent: unknown; // arbitrary Tiptap JSON format
   onChange: (content: unknown) => void;
   onTriggerDrawing?: (drawingId: string | null) => void;
+  aiEnabled?: boolean;
+  aiSessionOpen?: boolean;
+  onToggleAiSession?: () => void;
+  editorRef?: (editor: Editor | null) => void;
 }
 
-export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawing }: TiptapEditorProps) {
+export function TiptapEditor({
+  postId,
+  initialContent,
+  onChange,
+  onTriggerDrawing,
+  aiEnabled = false,
+  aiSessionOpen = false,
+  onToggleAiSession,
+  editorRef,
+}: TiptapEditorProps) {
   const { toast } = useToast();
   const [menuPos, setMenuPos] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [showMenu, setShowMenu] = React.useState(false);
@@ -166,6 +183,70 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
     [postId, toast]
   );
 
+  const acceptGhostText = (editorInstance: Editor) => {
+    let text = "";
+    editorInstance.state.doc.descendants((node, pos) => {
+      if (node.type.name === "ghostText") {
+        text = node.attrs.text;
+        editorInstance.view.dispatch(
+          editorInstance.state.tr
+            .delete(pos, pos + node.nodeSize)
+            .insertText(text, pos)
+        );
+        const resolvedPos = editorInstance.state.doc.resolve(pos + text.length);
+        editorInstance.view.dispatch(
+          editorInstance.state.tr.setSelection(
+            new TextSelection(resolvedPos)
+          )
+        );
+        return false;
+      }
+    });
+    return text;
+  };
+
+  const clearGhostText = (editorInstance: Editor) => {
+    editorInstance.state.doc.descendants((node, pos) => {
+      if (node.type.name === "ghostText") {
+        editorInstance.view.dispatch(
+          editorInstance.state.tr.delete(pos, pos + node.nodeSize)
+        );
+        return false;
+      }
+    });
+  };
+
+  const [generatingAlt, setGeneratingAlt] = React.useState(false);
+
+  const generateImageAltText = async () => {
+    if (!editor) return;
+    const src = editor.getAttributes("image").src;
+    if (!src) return;
+    setGeneratingAlt(true);
+    try {
+      const res = await fetch("/api/ai/alt-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: src }),
+      });
+      const data = await res.json();
+      if (res.ok && data.altText) {
+        const accept = window.confirm(`AI Suggestion for Image Alt Text:\n\n"${data.altText}"\n\nApply this description to the image?`);
+        if (accept) {
+          editor.chain().focus().updateAttributes("image", { alt: data.altText }).run();
+          toast("Alt text applied successfully", "success");
+        }
+      } else {
+        throw new Error(data.error || "Failed to generate alt text");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error generating alt text";
+      toast(message, "error");
+    } finally {
+      setGeneratingAlt(false);
+    }
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -214,6 +295,8 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
         lowlight,
       }),
       DrawingNode,
+      AiSuggestion,
+      GhostText,
     ],
     content: initialContent as Content,
     onUpdate: ({ editor }) => {
@@ -264,6 +347,31 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
         return false;
       },
       handleKeyDown: (view, event) => {
+        // 1. Intercept ghostText controls if active
+        let hasGhostText = false;
+        view.state.doc.descendants((node) => {
+          if (node.type.name === "ghostText") {
+            hasGhostText = true;
+            return false;
+          }
+        });
+
+        if (hasGhostText) {
+          if (event.key === "Tab") {
+            event.preventDefault();
+            acceptGhostText(editor as Editor);
+            return true;
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            clearGhostText(editor as Editor);
+            return true;
+          }
+          if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key !== "Shift") {
+            clearGhostText(editor as Editor);
+          }
+        }
+
         if (event.key === "/") {
           // Calculate popup overlay positioning coordinates
           const selection = view.state.selection;
@@ -285,6 +393,17 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
       },
     },
   });
+
+  React.useEffect(() => {
+    if (editorRef) {
+      editorRef(editor as Editor);
+    }
+    return () => {
+      if (editorRef) {
+        editorRef(null);
+      }
+    };
+  }, [editor, editorRef]);
 
   const handleMenuCommand = (command: string) => {
     if (!editor) return;
@@ -364,6 +483,24 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
       {/* Floating Side Toolbar - Responsive */}
       {editor && (
         <div className="flex md:flex-col items-center gap-1.5 p-1.5 bg-surface border border-border rounded-16 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mb-4 md:mb-0 md:sticky md:top-20 md:self-start z-10 w-fit shrink-0">
+          {aiEnabled && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 cursor-pointer transition-colors ${
+                  aiSessionOpen
+                    ? "text-accent bg-accent/8 border border-accent/20 hover:bg-accent/12"
+                    : "text-muted hover:bg-border/20"
+                }`}
+                onClick={onToggleAiSession}
+                title="Toggle AI Side Panel"
+              >
+                <Sparkles className="w-4 h-4" />
+              </Button>
+              <div className="h-[1px] w-5 bg-border md:my-0.5" />
+            </>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -577,6 +714,22 @@ export function TiptapEditor({ postId, initialContent, onChange, onTriggerDrawin
               >
                 100%
               </Button>
+
+              {aiEnabled && !editor.getAttributes("image").alt && (
+                <>
+                  <div className="h-4 w-[1px] bg-border/60 mx-1" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-13 gap-1 hover:bg-border/20 text-accent font-medium cursor-pointer"
+                    onClick={generateImageAltText}
+                    disabled={generatingAlt}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-accent" />
+                    {generatingAlt ? "Generating..." : "Generate Alt"}
+                  </Button>
+                </>
+              )}
             </Card>
           </BubbleMenu>
         )}
