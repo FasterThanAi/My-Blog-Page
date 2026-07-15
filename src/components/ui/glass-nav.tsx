@@ -9,12 +9,13 @@ import { Avatar } from "./avatar";
 import { Button } from "./button";
 import { ThemeToggle } from "./theme-toggle";
 import { Card } from "./card";
-import { LogOut, Settings, Edit, Bell, Search } from "lucide-react";
+import { LogOut, Settings, Edit, Bell, Search, LayoutDashboard } from "lucide-react";
 
 interface Profile {
   avatar_url: string | null;
   display_name: string | null;
   username: string;
+  role: string;
 }
 
 export function GlassNav() {
@@ -47,7 +48,7 @@ export function GlassNav() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("avatar_url, display_name, username")
+        .select("avatar_url, display_name, username, role")
         .eq("id", userId)
         .single();
 
@@ -218,6 +219,14 @@ export function GlassNav() {
                       @{profile?.username || "username"}
                     </p>
                   </div>
+                  {profile?.role === "owner" && (
+                    <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2 h-9 mb-1">
+                        <LayoutDashboard className="w-4 h-4 text-muted" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <Link href="/settings" onClick={() => setMenuOpen(false)}>
                     <Button variant="ghost" size="sm" className="w-full justify-start gap-2 h-9">
                       <Settings className="w-4 h-4 text-muted" />

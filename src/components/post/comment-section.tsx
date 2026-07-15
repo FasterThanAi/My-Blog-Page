@@ -20,6 +20,7 @@ interface CommentRaw {
   author_id: string;
   body: string;
   is_deleted: boolean;
+  is_hidden: boolean;
   created_at: string;
   updated_at: string;
   profiles: {
@@ -41,6 +42,7 @@ interface CommentNode {
   author_id: string;
   body: string;
   is_deleted: boolean;
+  is_hidden: boolean;
   created_at: string;
   updated_at: string;
   profiles: {

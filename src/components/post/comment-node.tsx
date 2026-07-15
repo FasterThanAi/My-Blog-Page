@@ -21,6 +21,7 @@ interface CommentNode {
   author_id: string;
   body: string;
   is_deleted: boolean;
+  is_hidden: boolean;
   created_at: string;
   updated_at: string;
   profiles: {
@@ -187,9 +188,14 @@ export function CommentNodeComponent({
         <div className="flex flex-col items-center gap-1 mt-1.5 shrink-0 select-none">
           <button
             type="button"
-            onClick={() => handleVote(1)}
-            className={`p-1 rounded hover:bg-border/20 transition-colors cursor-pointer ${
-              userVote === 1 ? "text-accent" : "text-muted hover:text-text"
+            onClick={() => !node.is_hidden && handleVote(1)}
+            disabled={node.is_hidden}
+            className={`p-1 rounded transition-colors ${
+              node.is_hidden 
+                ? "text-border cursor-not-allowed" 
+                : userVote === 1 
+                ? "text-accent cursor-pointer hover:bg-border/20" 
+                : "text-muted hover:text-text cursor-pointer hover:bg-border/20"
             }`}
             aria-label="Upvote comment"
           >
@@ -197,16 +203,27 @@ export function CommentNodeComponent({
           </button>
           <span
             className={`text-12 font-semibold select-none ${
-              userVote === 1 ? "text-accent" : userVote === -1 ? "text-red-500" : "text-text"
+              node.is_hidden
+                ? "text-border"
+                : userVote === 1
+                ? "text-accent"
+                : userVote === -1
+                ? "text-red-500"
+                : "text-text"
             }`}
           >
-            {score}
+            {node.is_hidden ? "-" : score}
           </span>
           <button
             type="button"
-            onClick={() => handleVote(-1)}
-            className={`p-1 rounded hover:bg-border/20 transition-colors cursor-pointer ${
-              userVote === -1 ? "text-red-500" : "text-muted hover:text-text"
+            onClick={() => !node.is_hidden && handleVote(-1)}
+            disabled={node.is_hidden}
+            className={`p-1 rounded transition-colors ${
+              node.is_hidden
+                ? "text-border cursor-not-allowed"
+                : userVote === -1
+                ? "text-red-500 cursor-pointer hover:bg-border/20"
+                : "text-muted hover:text-text cursor-pointer hover:bg-border/20"
             }`}
             aria-label="Downvote comment"
           >
@@ -268,15 +285,19 @@ export function CommentNodeComponent({
           ) : (
             <p
               className={`text-15 leading-relaxed leading-normal pr-4 ${
-                node.is_deleted ? "text-muted italic select-none" : "text-text"
+                (node.is_deleted || node.is_hidden) ? "text-muted italic select-none" : "text-text"
               }`}
             >
-              {node.body}
+              {node.is_deleted
+                ? "[deleted]"
+                : node.is_hidden
+                ? "[removed by moderator]"
+                : node.body}
             </p>
           )}
 
           {/* Action Row options */}
-          {!isEditing && (
+          {!isEditing && !node.is_hidden && (
             <div className="flex flex-wrap items-center gap-4 text-12 text-muted select-none mt-1">
               <button
                 type="button"

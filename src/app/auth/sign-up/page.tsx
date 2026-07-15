@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
+import { Lock } from "lucide-react";
 
 function SignUpForm() {
   const supabase = createClient();
@@ -17,7 +18,29 @@ function SignUpForm() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [publicSignup, setPublicSignup] = React.useState(true);
+  const [checkingFlag, setCheckingFlag] = React.useState(true);
   const returnTo = searchParams.get("returnTo") ?? "/";
+
+  React.useEffect(() => {
+    const checkFlag = async () => {
+      try {
+        const { data } = await supabase
+          .from("feature_flags")
+          .select("enabled")
+          .eq("key", "public_signup")
+          .maybeSingle();
+        if (data) {
+          setPublicSignup(data.enabled);
+        }
+      } catch {
+        // Fallback to true
+      } finally {
+        setCheckingFlag(false);
+      }
+    };
+    checkFlag();
+  }, [supabase]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +86,39 @@ function SignUpForm() {
       toast(error.message, "error");
     }
   };
+
+  if (checkingFlag) {
+    return (
+      <Card className="w-full max-w-[400px] p-8 flex flex-col gap-6 animate-pulse bg-surface">
+        <div className="h-8 bg-border/20 rounded-8 w-1/2 mx-auto" />
+        <div className="h-4 bg-border/20 rounded-8 w-3/4 mx-auto" />
+        <div className="h-10 bg-border/20 rounded-12 mt-4" />
+        <div className="h-10 bg-border/20 rounded-12" />
+        <div className="h-10 bg-border/20 rounded-12 mt-2" />
+      </Card>
+    );
+  }
+
+  if (!publicSignup) {
+    return (
+      <Card className="w-full max-w-[400px] p-8 flex flex-col gap-6 shadow-sm text-center bg-surface border border-border/60">
+        <div className="flex flex-col gap-3.5 items-center select-none">
+          <div className="p-3.5 rounded-full bg-red-500/5 text-red-500 border border-red-500/10 mb-1">
+            <Lock className="w-6 h-6 stroke-[1.5]" />
+          </div>
+          <h1 className="text-20 font-bold tracking-tight text-text">Invite-Only Access</h1>
+          <p className="text-13 text-muted leading-relaxed">
+            Registration is currently closed to the public. If you received an invitation or have a referral code, please contact your administrator to set up your account.
+          </p>
+        </div>
+        <div className="border-t border-border/40 pt-4 mt-2 select-none">
+          <Link href="/" className="text-13 text-accent hover:underline font-medium">
+            Return to Home
+          </Link>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-[400px] p-8 flex flex-col gap-6 shadow-sm">

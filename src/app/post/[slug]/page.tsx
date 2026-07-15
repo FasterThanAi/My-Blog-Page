@@ -83,6 +83,15 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   const isOwnPost = user ? user.id === post.author_id : false;
 
+  // Check comments feature flag
+  const { data: commentsFlag } = await supabase
+    .from("feature_flags")
+    .select("enabled")
+    .eq("key", "comments")
+    .maybeSingle();
+
+  const commentsEnabled = commentsFlag ? commentsFlag.enabled : true;
+
   return (
     <div className="min-h-screen bg-bg flex flex-col selection:bg-accent/20">
       <GlassNav />
@@ -117,13 +126,17 @@ export default async function PostDetailPage({ params }: PageProps) {
           )}
 
           {/* Heading title */}
-          <h1 className="text-40 md:text-52 font-semibold tracking-tight text-text leading-tight mb-8">
-            {post.title || "Untitled"}
+          <h1 className={`text-40 md:text-52 font-semibold tracking-tight leading-tight mb-8 ${post.is_hidden ? "text-muted italic select-none" : "text-text"}`}>
+            {post.is_hidden ? "[removed by moderator]" : (post.title || "Untitled")}
           </h1>
 
           {/* Semantic SSR content renderer */}
           <div className="tiptap-reading-page">
-            <TiptapRenderer content={post.content} />
+            {post.is_hidden ? (
+              <p className="text-15 text-muted italic select-none">[removed by moderator]</p>
+            ) : (
+              <TiptapRenderer content={post.content} />
+            )}
           </div>
 
           {/* Interactive bookmarks, shares, reactions actions */}
@@ -145,9 +158,11 @@ export default async function PostDetailPage({ params }: PageProps) {
           />
 
           {/* Discussion comments thread section */}
-          <div className="border-t border-border/60 mt-16 pt-10">
-            <CommentSection postId={post.id} postAuthorId={post.author_id} />
-          </div>
+          {commentsEnabled && (
+            <div className="border-t border-border/60 mt-16 pt-10">
+              <CommentSection postId={post.id} postAuthorId={post.author_id} />
+            </div>
+          )}
         </article>
       </main>
     </div>

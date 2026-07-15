@@ -1,79 +1,77 @@
 import * as React from "react";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { verifyOwnerAccess, fetchDashboardAnalytics } from "@/app/actions/dashboard";
 import { GlassNav } from "@/components/ui/glass-nav";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ModerationQueue } from "@/components/dashboard/moderation-queue";
+import { UsersDirectory } from "@/components/dashboard/users-directory";
+import { FlagsManager } from "@/components/dashboard/flags-manager";
+import { Shield } from "lucide-react";
+import { DashboardTabs } from "@/app/dashboard/dashboard-tabs";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/sign-in?returnTo=/dashboard");
-  }
-
-  // Fetch the role for server-side role control
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role, username, display_name")
-    .eq("id", user.id)
-    .single();
-
-  if (error || !profile || profile.role !== "owner") {
+  // Validate owner role on page load
+  try {
+    await verifyOwnerAccess();
+  } catch {
     redirect("/");
   }
 
+  // Load analytics
+  const analytics = await fetchDashboardAnalytics();
+
+  const statItems = [
+    {
+      title: "Total Users",
+      value: analytics.stats.users.total,
+      delta: analytics.stats.users.delta,
+      icon: "users" as const,
+    },
+    {
+      title: "Published Posts",
+      value: analytics.stats.posts.total,
+      delta: analytics.stats.posts.delta,
+      icon: "posts" as const,
+    },
+    {
+      title: "Active Comments",
+      value: analytics.stats.comments.total,
+      delta: analytics.stats.comments.delta,
+      icon: "comments" as const,
+    },
+    {
+      title: "Reactions",
+      value: analytics.stats.reactions.total,
+      delta: analytics.stats.reactions.delta,
+      icon: "reactions" as const,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg text-text pb-20">
       <GlassNav />
-      <main className="mx-auto max-w-7xl px-6 py-12 flex flex-col gap-8">
-        <div className="flex items-center justify-between border-b border-border pb-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-32 font-semibold tracking-tight text-text">
-                Owner Dashboard
-              </h1>
-              <Badge variant="accent">Admin</Badge>
-            </div>
-            <p className="text-15 text-muted">
-              Platform administration, statistics, and configuration keys.
-            </p>
+
+      <main className="mx-auto max-w-7xl px-6 pt-10 flex flex-col gap-10">
+        {/* Title */}
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-12 bg-accent/5 text-accent border border-accent/10">
+            <Shield className="w-6 h-6 stroke-[1.5]" />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-24 font-bold tracking-tight">Platform Operations</h1>
+            <p className="text-13 text-muted">Owner operations center, analytics, moderation, and flags.</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="flex flex-col gap-2">
-            <h3 className="text-13 font-semibold uppercase text-muted tracking-wider">
-              Welcome
-            </h3>
-            <p className="text-20 font-medium text-text">
-              {profile.display_name || `@${profile.username}`}
-            </p>
-            <p className="text-13 text-muted">Signed in as owner account</p>
-          </Card>
-
-          <Card className="flex flex-col gap-2">
-            <h3 className="text-13 font-semibold uppercase text-muted tracking-wider">
-              RLS Health
-            </h3>
-            <p className="text-20 font-medium text-green-600 dark:text-green-400">
-              Active & Enforced
-            </p>
-            <p className="text-13 text-muted">All tables protected via RLS policies</p>
-          </Card>
-
-          <Card className="flex flex-col gap-2">
-            <h3 className="text-13 font-semibold uppercase text-muted tracking-wider">
-              Supabase Status
-            </h3>
-            <p className="text-20 font-medium text-text">Connected</p>
-            <p className="text-13 text-muted">Auth trigger & storage configurations verified</p>
-          </Card>
-        </div>
+        {/* Dashboard Tabs Switcher */}
+        <DashboardTabs
+          statItems={statItems}
+          chartData={analytics.chartData}
+          moderationQueue={<ModerationQueue />}
+          usersDirectory={<UsersDirectory />}
+          flagsManager={<FlagsManager />}
+        />
       </main>
     </div>
   );

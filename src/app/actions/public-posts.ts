@@ -50,6 +50,7 @@ export async function getPublicLatestPostsAction(input: unknown) {
     .select("*, profiles!author_id(*), reactions(count)")
     .eq("status", "published")
     .eq("visibility", "public")
+    .eq("is_hidden", false)
     .order("published_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(6);
@@ -106,6 +107,7 @@ export async function getPublicTrendingPostsAction(input: unknown) {
     .select("*, profiles!author_id(*), reactions(count)")
     .eq("status", "published")
     .eq("visibility", "public")
+    .eq("is_hidden", false)
     .gte("published_at", fourteenDaysAgo);
 
   if (tag) {
@@ -188,6 +190,7 @@ export async function getPublicFollowingPostsAction(input: unknown) {
     .select("*, profiles!author_id(*), reactions(count)")
     .eq("status", "published")
     .eq("visibility", "public")
+    .eq("is_hidden", false)
     .in("author_id", followingIds)
     .order("published_at", { ascending: false })
     .order("id", { ascending: false })
