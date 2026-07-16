@@ -202,34 +202,49 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
     }
   };
 
-  // Tag Management
+  // Tag Management — Enter, comma, or Space confirms a tag
+  const addTagFromInput = (raw: string) => {
+    const val = raw.trim().replace(/[,\s]+/g, "");
+    if (!val) return;
+    if (tags.includes(val)) {
+      setTagInput("");
+      return;
+    }
+    if (tags.length >= 5) {
+      toast("Maximum of 5 tags allowed", "error");
+      return;
+    }
+    setTags(prev => [...prev, val]);
+    setTagInput("");
+  };
+
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
+    if (e.key === "Enter" || e.key === "," || e.key === " ") {
       e.preventDefault();
-      const val = tagInput.trim().replace(/,/g, "");
-      if (val) {
-        if (tags.includes(val)) {
-          setTagInput("");
-          return;
-        }
-        if (tags.length >= 5) {
-          toast("Maximum of 5 tags allowed", "error");
-          return;
-        }
-        setTags([...tags, val]);
-        setTagInput("");
-      }
+      addTagFromInput(tagInput);
+    } else if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
+      // Backspace on empty input removes the last tag
+      setTags(prev => prev.slice(0, -1));
     }
   };
 
   const removeTag = (index: number) => {
-    setTags(tags.filter((_, i) => i !== index));
+    setTags(prev => prev.filter((_, i) => i !== index));
   };
 
   // Publish / Save Action
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     setPublishing(true);
+
+    // Flush any tag that was typed but not confirmed with Enter/Space
+    let finalTags = tags;
+    const pendingTag = tagInput.trim().replace(/[,\s]+/g, "");
+    if (pendingTag && !tags.includes(pendingTag) && tags.length < 5) {
+      finalTags = [...tags, pendingTag];
+      setTags(finalTags);
+      setTagInput("");
+    }
 
     try {
       // Force save latest content and title before publishing (avoiding stale React state)
@@ -240,7 +255,7 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
         id: post.id,
         cover_image_url: coverImageUrl || null,
         excerpt: excerpt || null,
-        tags,
+        tags: finalTags,
         visibility,
         status,
         seo_title: seoTitle || null,
@@ -492,27 +507,40 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
 
           {/* Tag Selector */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-13 font-semibold text-text">Tags (Max 5)</label>
-            <Input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleTagKeyDown}
-              placeholder="Add tag and press Enter..."
-            />
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex items-center justify-between">
+              <label className="text-13 font-semibold text-text">Tags</label>
+              <span className="text-12 text-muted">{tags.length}/5</span>
+            </div>
+            {/* Inline chip + input box */}
+            <div className="flex flex-wrap gap-1.5 items-center min-h-[40px] px-3 py-2 border border-border rounded-12 bg-surface focus-within:ring-2 focus-within:ring-accent/30 focus-within:border-accent transition-all">
               {tags.map((tag, idx) => (
-                <Badge key={idx} variant="accent" className="flex items-center gap-1">
-                  {tag}
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-12 font-medium bg-accent/15 text-accent"
+                >
+                  #{tag}
                   <button
                     type="button"
                     onClick={() => removeTag(idx)}
-                    className="cursor-pointer hover:text-text"
+                    className="cursor-pointer hover:text-text transition-colors"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-2.5 h-2.5" />
                   </button>
-                </Badge>
+                </span>
               ))}
+              {tags.length < 5 && (
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  onBlur={() => addTagFromInput(tagInput)}
+                  placeholder={tags.length === 0 ? "Type a tag, then Space or Enter…" : "Add another…"}
+                  className="flex-1 min-w-[120px] outline-none bg-transparent text-13 text-text placeholder:text-muted"
+                />
+              )}
             </div>
+            <p className="text-12 text-muted">Press Space, Enter, or comma after each tag. Up to 5 tags.</p>
           </div>
           {/* SEO Metadata Override Section */}
           <div className="flex flex-col gap-3 border-t border-border pt-4">

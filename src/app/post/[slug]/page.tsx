@@ -193,6 +193,16 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   const commentsEnabled = commentsFlag ? commentsFlag.enabled : true;
 
+  // 5. Fetch tags for this post
+  const { data: postTagsData } = await supabase
+    .from("post_tags")
+    .select("tags(id, name, slug)")
+    .eq("post_id", post.id);
+
+  const postTags = (postTagsData as unknown as { tags: { id: string; name: string; slug: string } | null }[] | null)
+    ?.map(pt => pt.tags)
+    .filter((t): t is { id: string; name: string; slug: string } => t !== null) || [];
+
   return (
     <div className="min-h-screen bg-bg flex flex-col selection:bg-accent/20">
       <script
@@ -245,6 +255,21 @@ export default async function PostDetailPage({ params }: PageProps) {
               <TiptapRenderer content={post.content} />
             )}
           </div>
+
+          {/* Tag chips */}
+          {postTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-8 mb-2">
+              {postTags.map(tag => (
+                <Link
+                  key={tag.id}
+                  href={`/tag/${tag.slug}`}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-13 font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+                >
+                  #{tag.name}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Interactive bookmarks, shares, reactions actions */}
           <PostActions

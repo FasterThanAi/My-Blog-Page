@@ -47,7 +47,7 @@ export async function getPublicLatestPostsAction(input: unknown) {
 
   let query = supabase
     .from("posts")
-    .select("*, profiles!author_id(*), reactions(count)")
+    .select("*, profiles!author_id(*), reactions(count), post_tags(tags(*))")
     .eq("status", "published")
     .eq("visibility", "public")
     .eq("is_hidden", false)
@@ -104,7 +104,7 @@ export async function getPublicTrendingPostsAction(input: unknown) {
 
   let query = supabase
     .from("posts")
-    .select("*, profiles!author_id(*), reactions(count)")
+    .select("*, profiles!author_id(*), reactions(count), post_tags(tags(*))")
     .eq("status", "published")
     .eq("visibility", "public")
     .eq("is_hidden", false)

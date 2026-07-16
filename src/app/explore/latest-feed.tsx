@@ -18,6 +18,7 @@ interface PostItem {
   published_at: string;
   reading_time_minutes?: number | null;
   reactions: { count: number }[];
+  post_tags?: { tags: { id: string; name: string; slug: string } | null }[];
   profiles: {
     username: string;
     display_name?: string | null;
@@ -201,6 +202,25 @@ export function LatestFeed({ selectedTag }: LatestFeedProps) {
                   </span>
                 )}
               </div>
+
+              {/* Tag chips */}
+              {post.post_tags && post.post_tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {post.post_tags
+                    .filter(pt => pt.tags)
+                    .slice(0, 4)
+                    .map(pt => (
+                      <Link
+                        key={pt.tags!.id}
+                        href={`/tag/${pt.tags!.slug}`}
+                        onClick={e => e.stopPropagation()}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-12 font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+                      >
+                        #{pt.tags!.name}
+                      </Link>
+                    ))}
+                </div>
+              )}
             </div>
 
             {/* Optional cover thumbnail */}

@@ -60,6 +60,8 @@ export function CommentNodeComponent({
   // Optimistic voting state
   const [userVote, setUserVote] = React.useState(node.userVote);
   const [score, setScore] = React.useState(node.score);
+  // Guard: prevent concurrent vote requests (rapid clicking creates duplicate DB rows)
+  const votingRef = React.useRef(false);
 
   // Collapsing state for depth > 4 threads
   const [isExpanded, setIsExpanded] = React.useState(false);
@@ -94,6 +96,13 @@ export function CommentNodeComponent({
       toast("You must be signed in to vote", "error");
       return;
     }
+    // Block if a vote request is already in flight
+    if (votingRef.current) return;
+    votingRef.current = true;
+
+    // Capture current state for rollback BEFORE optimistic update
+    const prevVote = userVote;
+    const prevScore = score;
 
     // 1. Optimistic Update UI state
     let nextVote: number = value;
@@ -110,11 +119,13 @@ export function CommentNodeComponent({
       // Keep state in sync with server response (handles toggles/flips)
       setUserVote(result.value);
     } catch (err) {
-      // 2. Rollback on error
-      setUserVote(userVote);
-      setScore(score);
+      // 2. Rollback on error using pre-captured values
+      setUserVote(prevVote);
+      setScore(prevScore);
       const message = err instanceof Error ? err.message : "Failed to vote";
       toast(message, "error");
+    } finally {
+      votingRef.current = false;
     }
   };
 
