@@ -291,7 +291,18 @@ export default function MarketingPage() {
         <div className="mx-auto max-w-5xl px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <span className="text-15 font-semibold text-text uppercase tracking-wider">SaaS Blog</span>
-            <span className="text-13 text-muted">© 2026 Antigravity. All rights reserved.</span>
+            <span className="text-13 text-muted">
+              © 2026{" "}
+              <a
+                href="https://github.com/FasterThanAi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-text underline decoration-border hover:decoration-text transition-all font-medium cursor-pointer"
+              >
+                FasterThanAi
+              </a>
+              . All rights reserved.
+            </span>
           </div>
 
           <div className="flex items-center gap-6">
