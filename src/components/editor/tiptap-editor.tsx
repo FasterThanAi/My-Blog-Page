@@ -30,6 +30,10 @@ import {
   Plus,
   Grid,
   Sparkles,
+  Bold,
+  Italic,
+  Strikethrough,
+  Link as LinkIcon,
 } from "lucide-react";
 import { TextSelection } from "@tiptap/pm/state";
 import { DrawingNode } from "./drawing-node";
@@ -828,6 +832,86 @@ export function TiptapEditor({
                 onClick={() => editor.chain().focus().updateAttributes("drawing", { width: "100%" }).run()}
               >
                 100%
+              </Button>
+            </Card>
+          </BubbleMenu>
+        )}
+
+        {/* Dynamic Bubble Menu for Text Selection (Bold, Italic, Strikethrough, Link) */}
+        {editor && (
+          <BubbleMenu
+            editor={editor}
+            shouldShow={({ editor, state }) => {
+              const { selection } = state;
+              const isTextSelection = !selection.empty;
+              const isNotSpecialNode =
+                !editor.isActive("image") &&
+                !editor.isActive("drawing") &&
+                !editor.isActive("table");
+              return isTextSelection && isNotSpecialNode;
+            }}
+          >
+            <Card className="flex items-center gap-1 p-1 bg-surface border border-border shadow-lg rounded-12 select-none">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                  editor.isActive("bold") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                }`}
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                title="Bold"
+              >
+                <Bold className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                  editor.isActive("italic") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                }`}
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                title="Italic"
+              >
+                <Italic className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                  editor.isActive("strike") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                }`}
+                onClick={() => editor.chain().focus().toggleStrike().run()}
+                title="Strikethrough"
+              >
+                <Strikethrough className="w-4 h-4" />
+              </Button>
+
+              <div className="h-4 w-[1px] bg-border/60 mx-1" />
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                  editor.isActive("link") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                }`}
+                onClick={() => {
+                  if (editor.isActive("link")) {
+                    editor.chain().focus().unsetLink().run();
+                  } else {
+                    const url = window.prompt("Enter URL:");
+                    if (url) {
+                      // Normalize URL
+                      let href = url.trim();
+                      if (href && !/^https?:\/\//i.test(href)) {
+                        href = `https://${href}`;
+                      }
+                      editor.chain().focus().setLink({ href, target: "_blank" }).run();
+                    }
+                  }
+                }}
+                title={editor.isActive("link") ? "Remove Link" : "Add Link"}
+              >
+                <LinkIcon className="w-4 h-4" />
               </Button>
             </Card>
           </BubbleMenu>
