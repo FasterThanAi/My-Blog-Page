@@ -9,11 +9,14 @@ const envSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.string().optional().default("http://localhost:3000"),
 });
 
-// Only validate strictly on the server at runtime, not during static build
 const getEnv = () => {
+  // Use fallback placeholders during build time to prevent compile/build crashes when env vars are not set yet
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
+
   const result = envSchema.safeParse({
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GEMINI_MODEL: process.env.GEMINI_MODEL,
@@ -26,6 +29,17 @@ const getEnv = () => {
       .join("\n");
     throw new Error(
       `[Env Validation Error] Missing or invalid environment variables:\n${errorMessages}\n\nPlease check your .env.local file or Vercel Environment Variables.`
+    );
+  }
+
+  // Warn in production console at runtime if actual variables are missing
+  if (
+    typeof window === "undefined" &&
+    process.env.NODE_ENV === "production" &&
+    (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  ) {
+    console.warn(
+      "⚠️ WARNING: Supabase URL or Anon Key is missing in production environment. Using placeholders."
     );
   }
 
