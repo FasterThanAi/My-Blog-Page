@@ -114,7 +114,7 @@ export default async function PostDetailPage({ params }: PageProps) {
         {/* Long-form Reading Body: 68ch Max Width */}
         <article className="w-full max-w-[68ch] flex flex-col">
           {/* Post Header cover image if set */}
-          {post.cover_image_url && (
+          {post.cover_image_url && post.cover_image_url.trim() !== "" && (
             <div className="w-full aspect-[16/9] rounded-24 overflow-hidden border border-border/40 select-none mb-10 shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

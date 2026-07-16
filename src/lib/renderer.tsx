@@ -1,6 +1,7 @@
 import * as React from "react";
 import { common, createLowlight } from "lowlight";
 import { CopyButton } from "@/components/ui/copy-button";
+import { DrawingBlock } from "@/components/post/drawing-block";
 
 // Initialize lowlight engine
 const low = createLowlight(common);
@@ -155,8 +156,9 @@ function renderNode(node: TiptapNode, index: number): React.ReactNode {
       );
 
     case "image": {
-      const src = String(node.attrs?.src || "");
+      const src = node.attrs?.src ? String(node.attrs.src).trim() : "";
       const alt = String(node.attrs?.alt || "");
+      if (!src) return null;
       return (
         <figure key={key} className="my-8 flex flex-col gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -196,17 +198,11 @@ function renderNode(node: TiptapNode, index: number): React.ReactNode {
       const aspect = String(node.attrs?.aspect || "16/9");
 
       return (
-        <div
+        <DrawingBlock
           key={key}
-          className="drawing-block my-6"
-          style={{
-            aspectRatio: aspect,
-            backgroundImage: `url(${previewUrl})`,
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-          }}
-          data-drawing-id={drawingId}
+          drawingId={drawingId}
+          previewUrl={previewUrl}
+          aspect={aspect}
         />
       );
     }

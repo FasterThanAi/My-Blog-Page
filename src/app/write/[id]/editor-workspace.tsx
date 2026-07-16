@@ -110,7 +110,7 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
     setSavingState("saving");
     const timeoutId = setTimeout(async () => {
       try {
-        await savePostAction({ id: post.id, title, content });
+        await savePostAction({ id: post.id, title, content: JSON.stringify(content) });
         setSavingState("saved");
         setLastSaved(`Saved · just now`);
       } catch {
@@ -138,7 +138,7 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
         e.preventDefault();
         setSavingState("saving");
         try {
-          await savePostAction({ id: post.id, title, content });
+          await savePostAction({ id: post.id, title, content: JSON.stringify(content) });
           setSavingState("saved");
           setLastSaved("Saved · just now");
           toast("Document saved successfully", "success");
@@ -231,6 +231,10 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
     setPublishing(true);
 
     try {
+      // Force save latest content and title before publishing (avoiding stale React state)
+      const latestContent = editorInstance ? editorInstance.getJSON() : content;
+      await savePostAction({ id: post.id, title, content: JSON.stringify(latestContent) });
+
       await publishPostAction({
         id: post.id,
         cover_image_url: coverImageUrl || null,

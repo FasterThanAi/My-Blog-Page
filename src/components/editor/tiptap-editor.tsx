@@ -93,8 +93,27 @@ export function TiptapEditor({
         }
       });
     } else {
-      // New drawing: insert at the current cursor selection
-      editor.chain().focus().setDrawing({ drawingId, previewUrl, aspect }).run();
+      // Search for any existing empty/placeholder drawing node and update it
+      let updated = false;
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === "drawing" && !node.attrs.drawingId) {
+          editor.view.dispatch(
+            editor.state.tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              drawingId,
+              previewUrl,
+              aspect,
+            })
+          );
+          updated = true;
+          return false;
+        }
+      });
+
+      if (!updated) {
+        // Fallback: new drawing
+        editor.chain().focus().setDrawing({ drawingId, previewUrl, aspect }).run();
+      }
     }
 
     setDrawingModalOpen(false);
@@ -338,11 +357,9 @@ export function TiptapEditor({
       handleDoubleClickOn: (view, pos, node) => {
         if (node.type.name === "drawing") {
           const drawingId = node.attrs.drawingId;
-          if (drawingId) {
-            handleTriggerDrawing(drawingId);
-            if (onTriggerDrawing) onTriggerDrawing(drawingId);
-            return true;
-          }
+          handleTriggerDrawing(drawingId || null);
+          if (onTriggerDrawing) onTriggerDrawing(drawingId || null);
+          return true;
         }
         return false;
       },
@@ -748,10 +765,8 @@ export function TiptapEditor({
                 className="h-8 px-2 text-13 gap-1.5 hover:bg-border/20 text-accent bg-accent/8 border border-accent/20 cursor-pointer font-medium"
                 onClick={() => {
                   const drawingId = editor.getAttributes("drawing").drawingId;
-                  if (drawingId) {
-                    handleTriggerDrawing(drawingId);
-                    if (onTriggerDrawing) onTriggerDrawing(drawingId);
-                  }
+                  handleTriggerDrawing(drawingId || null);
+                  if (onTriggerDrawing) onTriggerDrawing(drawingId || null);
                 }}
               >
                 <Palette className="w-3.5 h-3.5 text-accent" />

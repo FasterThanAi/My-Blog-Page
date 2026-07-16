@@ -96,7 +96,16 @@ export async function savePostAction(input: unknown) {
     throw new Error(validation.error.issues[0].message);
   }
 
-  const { id, title, content } = validation.data;
+  const { id, title, content: rawContent } = validation.data;
+  let content = rawContent;
+  if (typeof rawContent === "string") {
+    try {
+      content = JSON.parse(rawContent);
+    } catch {
+      // Keep as string if parsing fails
+    }
+  }
+  console.log("SAVE_POST_CONTENT:", JSON.stringify(content));
   const supabase = await createClient();
 
   const {
