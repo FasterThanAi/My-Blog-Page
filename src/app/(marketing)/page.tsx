@@ -17,6 +17,8 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 interface PostItem {
   id: string;
@@ -36,6 +38,8 @@ export default function MarketingPage() {
   const shouldReduceMotion = useReducedMotion();
   const [latestPosts, setLatestPosts] = React.useState<PostItem[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const supabase = createClient();
 
   // Scroll properties for card parallax
   const { scrollY } = useScroll();
@@ -55,6 +59,22 @@ export default function MarketingPage() {
         setLoading(false);
       });
   }, []);
+
+  React.useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+    };
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -124,12 +144,21 @@ export default function MarketingPage() {
             variants={itemVariants}
             className="flex flex-wrap items-center justify-center gap-4 mt-6"
           >
-            <Link href="/auth/sign-up">
-              <Button size="lg" className="flex items-center gap-2">
-                Join Publication
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/write">
+                <Button size="lg" className="flex items-center gap-2">
+                  Go to Studio
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/auth/sign-up">
+                <Button size="lg" className="flex items-center gap-2">
+                  Join Publication
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
             <Link href="/explore">
               <Button size="lg" variant="secondary" className="flex items-center gap-2">
                 Explore Feed
