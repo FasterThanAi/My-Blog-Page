@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getPublicTrendingPostsAction } from "@/app/actions/public-posts";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -141,12 +142,13 @@ export function TrendingFeed({ selectedTag }: TrendingFeedProps) {
 
             {/* Optional Cover image */}
             {post.cover_image_url && (
-              <div className="w-28 md:w-36 aspect-[16/10] shrink-0 rounded-12 overflow-hidden border border-border/40 select-none">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              <div className="w-28 md:w-36 aspect-[16/10] shrink-0 rounded-12 overflow-hidden border border-border/40 select-none relative">
+                <Image
                   src={post.cover_image_url}
-                  alt=""
-                  className="w-full h-full object-cover"
+                  alt={post.title || "Post thumbnail"}
+                  fill
+                  sizes="(max-width: 768px) 112px, 144px"
+                  className="object-cover"
                 />
               </div>
             )}

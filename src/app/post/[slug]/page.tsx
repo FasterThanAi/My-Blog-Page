@@ -1,5 +1,7 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GlassNav } from "@/components/ui/glass-nav";
@@ -11,6 +13,81 @@ import { CommentSection } from "@/components/post/comment-section";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slug);
+
+  let query = supabase
+    .from("posts")
+    .select("title, excerpt, cover_image_url, published_at, updated_at, profiles!author_id(username, display_name)")
+    .eq("status", "published");
+
+  if (isUuid) {
+    query = query.eq("id", slug);
+  } else {
+    query = query.eq("slug", slug);
+  }
+
+  const { data: rawPost } = await query.maybeSingle();
+
+  if (!rawPost) {
+    return {
+      title: "Post Not Found | SaaS Blog",
+    };
+  }
+
+  const post = rawPost as unknown as {
+    title: string | null;
+    excerpt: string | null;
+    cover_image_url: string | null;
+    published_at: string | null;
+    updated_at: string | null;
+    profiles: {
+      username: string;
+      display_name: string | null;
+    } | null;
+  };
+
+  const title = post.title || "Untitled Article";
+  const description = post.excerpt || "Read this article on SaaS Blog.";
+  const authorName = post.profiles?.display_name || post.profiles?.username || "Anonymous";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const canonicalUrl = `${siteUrl}/post/${slug}`;
+  const ogImageUrl = `${siteUrl}/api/og/post?title=${encodeURIComponent(title)}&author=${encodeURIComponent(authorName)}`;
+
+  return {
+    title: `${title} | SaaS Blog`,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: "article",
+      publishedTime: post.published_at || undefined,
+      authors: [authorName],
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
 }
 
 export default async function PostDetailPage({ params }: PageProps) {
@@ -41,6 +118,30 @@ export default async function PostDetailPage({ params }: PageProps) {
   if (error || !post) {
     notFound();
   }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title || "Untitled",
+    "description": post.excerpt || "",
+    "image": post.cover_image_url || `${siteUrl}/api/og/post?title=${encodeURIComponent(post.title || "Untitled")}&author=${encodeURIComponent(post.profiles?.display_name || post.profiles?.username || "Anonymous")}`,
+    "datePublished": post.published_at,
+    "dateModified": post.updated_at || post.published_at,
+    "author": {
+      "@type": "Person",
+      "name": post.profiles?.display_name || post.profiles?.username || "Anonymous",
+      "url": `${siteUrl}/profile/${post.profiles?.username}`,
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "SaaS Blog",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${siteUrl}/favicon.ico`,
+      },
+    },
+  };
 
   // 3. Resolve initial reaction state indicators
   let initialLiked = false;
@@ -94,6 +195,10 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-bg flex flex-col selection:bg-accent/20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <GlassNav />
 
       {/* View Incrementer Component */}
@@ -115,12 +220,14 @@ export default async function PostDetailPage({ params }: PageProps) {
         <article className="w-full max-w-[68ch] flex flex-col">
           {/* Post Header cover image if set */}
           {post.cover_image_url && post.cover_image_url.trim() !== "" && (
-            <div className="w-full aspect-[16/9] rounded-24 overflow-hidden border border-border/40 select-none mb-10 shadow-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="w-full aspect-[16/9] rounded-24 overflow-hidden border border-border/40 select-none mb-10 shadow-sm relative">
+              <Image
                 src={post.cover_image_url}
-                alt=""
-                className="w-full h-full object-cover"
+                alt={post.title || "Post cover image"}
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 720px"
+                className="object-cover"
               />
             </div>
           )}

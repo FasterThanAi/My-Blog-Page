@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { GlassNav } from "@/components/ui/glass-nav";
 import { Button } from "@/components/ui/button";
@@ -201,12 +202,13 @@ export default function MarketingPage() {
               {latestPosts.map((post) => (
                 <Card key={post.id} className="flex flex-col h-full hover:border-accent/20 transition-colors p-5">
                   {post.cover_image_url && (
-                    <div className="w-full aspect-[16/10] rounded-12 overflow-hidden mb-4 border border-border/50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                    <div className="w-full aspect-[16/10] rounded-12 overflow-hidden mb-4 border border-border/50 relative">
+                      <Image
                         src={post.cover_image_url}
-                        alt=""
-                        className="w-full h-full object-cover"
+                        alt={post.title || "Post cover image"}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 300px"
+                        className="object-cover"
                       />
                     </div>
                   )}

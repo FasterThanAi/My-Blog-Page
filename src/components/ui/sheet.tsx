@@ -22,6 +22,8 @@ export function Sheet({
   children,
   className,
 }: SheetProps) {
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -32,6 +34,56 @@ export function Sheet({
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
+
+  // Focus first element ONLY once when opening sheet
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(() => {
+      const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      const focusableElements = sheetRef.current?.querySelectorAll(focusableSelectors);
+      if (focusableElements && focusableElements.length > 0) {
+        (focusableElements[0] as HTMLElement).focus();
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
+  // Tab trapping & Escape closing key listener
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      const focusableElements = sheetRef.current?.querySelectorAll(focusableSelectors);
+      if (!focusableElements || focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   const isRight = side === "right";
 
@@ -51,6 +103,7 @@ export function Sheet({
 
           {/* Sheet body */}
           <motion.div
+            ref={sheetRef}
             initial={
               isRight
                 ? { x: "100%", opacity: 0.9 }

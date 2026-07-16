@@ -261,7 +261,7 @@ export function CommentSection({ postId, postAuthorId }: CommentSectionProps) {
 
       {/* Thread list recursive nodes rendering */}
       {commentTree.length > 0 ? (
-        <div className="flex flex-col gap-6">
+        <ul className="flex flex-col gap-6 list-none pl-0" role="list" aria-label="Discussion thread comments">
           {commentTree.map((node) => (
             <CommentNodeComponent
               key={node.id}
@@ -272,7 +272,7 @@ export function CommentSection({ postId, postAuthorId }: CommentSectionProps) {
               onMutation={loadComments}
             />
           ))}
-        </div>
+        </ul>
       ) : (
         <EmptyState
           icon={MessageSquare}

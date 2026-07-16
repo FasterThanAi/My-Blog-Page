@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
@@ -227,12 +228,13 @@ export function ProfileLayout({
                   </div>
 
                   {post.cover_image_url && (
-                    <div className="w-24 md:w-28 aspect-[16/10] shrink-0 rounded-12 overflow-hidden border border-border/40 select-none">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                    <div className="w-24 md:w-28 aspect-[16/10] shrink-0 rounded-12 overflow-hidden border border-border/40 select-none relative">
+                      <Image
                         src={post.cover_image_url}
-                        alt=""
-                        className="w-full h-full object-cover"
+                        alt={post.title || "Post thumbnail"}
+                        fill
+                        sizes="(max-width: 768px) 96px, 112px"
+                        className="object-cover"
                       />
                     </div>
                   )}

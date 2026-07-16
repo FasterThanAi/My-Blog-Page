@@ -1,8 +1,53 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GlassNav } from "@/components/ui/glass-nav";
 import { ProfileLayout } from "@/components/profile/profile-layout";
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { username } = await params;
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, display_name, bio, avatar_url")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (!profile) {
+    return {
+      title: "Profile Not Found | SaaS Blog",
+    };
+  }
+
+  const name = profile.display_name || profile.username;
+  const description = profile.bio || `View the profile of ${name} on SaaS Blog.`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const canonicalUrl = `${siteUrl}/profile/${username}`;
+
+  return {
+    title: `${name} (@${profile.username}) | SaaS Blog`,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: `${name} (@${profile.username})`,
+      description,
+      url: canonicalUrl,
+      type: "profile",
+      username: profile.username,
+      images: profile.avatar_url ? [{ url: profile.avatar_url }] : undefined,
+    },
+    twitter: {
+      card: "summary",
+      title: `${name} (@${profile.username})`,
+      description,
+      images: profile.avatar_url ? [profile.avatar_url] : undefined,
+    },
+  };
+}
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -27,6 +72,17 @@ export default async function ProfilePage({ params }: PageProps) {
   if (error || !profile) {
     notFound();
   }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": profile.display_name || profile.username,
+    "alternateName": profile.username,
+    "description": profile.bio || "",
+    "image": profile.avatar_url || undefined,
+    "url": `${siteUrl}/profile/${username}`,
+  };
 
   // 3. Resolve followers & following counts
   const { count: followersCount } = await supabase
@@ -84,6 +140,10 @@ export default async function ProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-bg flex flex-col selection:bg-accent/20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <GlassNav />
 
       <main className="mx-auto max-w-4xl px-6 py-12 flex-1 w-full flex flex-col">

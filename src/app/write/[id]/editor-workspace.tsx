@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GlassNav } from "@/components/ui/glass-nav";
 import { Card } from "@/components/ui/card";
@@ -442,8 +443,13 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
             <Card className="flex flex-col items-center justify-center p-6 border-dashed text-center min-h-[140px] relative">
               {coverImageUrl ? (
                 <div className="relative w-full aspect-video rounded-8 overflow-hidden group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={coverImageUrl} alt="Cover preview" className="w-full h-full object-cover" />
+                  <Image
+                    src={coverImageUrl}
+                    alt="Cover preview"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    className="object-cover"
+                  />
                   <button
                     type="button"
                     onClick={() => setCoverImageUrl("")}

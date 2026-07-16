@@ -181,7 +181,7 @@ export function CommentNodeComponent({
   const showCollapsePrompt = depth >= 4 && node.children.length > 0 && !isExpanded;
 
   return (
-    <div id={`comment-${node.id}`} className="flex flex-col gap-2.5 select-none w-full scroll-mt-24">
+    <li id={`comment-${node.id}`} className="flex flex-col gap-2.5 select-none w-full list-none scroll-mt-24" role="listitem">
       {/* Target Comment Card Node */}
       <div className="flex gap-3">
         {/* Left Hand vote columns (▲ score ▼) */}
@@ -409,12 +409,14 @@ export function CommentNodeComponent({
             </div>
           ) : (
             /* Flatten nesting indentation at depth >= 4 to preserve mobile layout */
-            <div
-              className={`flex flex-col gap-5 ${
+            <ul
+              className={`flex flex-col gap-5 list-none pl-0 ${
                 depth < 4
                   ? "pl-5 border-l border-border/40 ml-2.5 mt-4"
                   : "mt-4 border-l border-accent/20 ml-2.5 pl-4"
               }`}
+              role="list"
+              aria-label="Replies"
             >
               {node.children.map((child) => (
                 <CommentNodeComponent
@@ -426,10 +428,10 @@ export function CommentNodeComponent({
                   onMutation={onMutation}
                 />
               ))}
-            </div>
+            </ul>
           )}
         </div>
       )}
-    </div>
+    </li>
   );
 }
