@@ -9,6 +9,8 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
 import { common, createLowlight } from "lowlight";
 import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
@@ -34,6 +36,7 @@ import {
   Italic,
   Strikethrough,
   Link as LinkIcon,
+  ChevronLeft,
 } from "lucide-react";
 import { TextSelection } from "@tiptap/pm/state";
 import { DrawingNode } from "./drawing-node";
@@ -73,6 +76,9 @@ export function TiptapEditor({
   // Excalidraw Sketchpad Modal States
   const [drawingModalOpen, setDrawingModalOpen] = React.useState(false);
   const [editDrawingId, setEditDrawingId] = React.useState<string | null>(null);
+
+  // Text selection color picker states
+  const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
 
   const handleTriggerDrawing = (drawingId: string | null) => {
     setEditDrawingId(drawingId);
@@ -320,6 +326,8 @@ export function TiptapEditor({
       DrawingNode,
       AiSuggestion,
       GhostText,
+      TextStyle,
+      Color,
     ],
     content: initialContent as Content,
     onUpdate: ({ editor }) => {
@@ -425,6 +433,17 @@ export function TiptapEditor({
       }
     };
   }, [editor, editorRef]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+    const handleSelectionUpdate = () => {
+      setColorPickerOpen(false);
+    };
+    editor.on("selectionUpdate", handleSelectionUpdate);
+    return () => {
+      editor.off("selectionUpdate", handleSelectionUpdate);
+    };
+  }, [editor]);
 
   const handleMenuCommand = (command: string) => {
     if (!editor) return;
@@ -837,7 +856,7 @@ export function TiptapEditor({
           </BubbleMenu>
         )}
 
-        {/* Dynamic Bubble Menu for Text Selection (Bold, Italic, Strikethrough, Link) */}
+        {/* Dynamic Bubble Menu for Text Selection (Bold, Italic, Strikethrough, Link, Color) */}
         {editor && (
           <BubbleMenu
             editor={editor}
@@ -852,67 +871,134 @@ export function TiptapEditor({
             }}
           >
             <Card className="flex items-center gap-1 p-1 bg-surface border border-border shadow-lg rounded-12 select-none">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
-                  editor.isActive("bold") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
-                }`}
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                title="Bold"
-              >
-                <Bold className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
-                  editor.isActive("italic") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
-                }`}
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                title="Italic"
-              >
-                <Italic className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
-                  editor.isActive("strike") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
-                }`}
-                onClick={() => editor.chain().focus().toggleStrike().run()}
-                title="Strikethrough"
-              >
-                <Strikethrough className="w-4 h-4" />
-              </Button>
+              {colorPickerOpen ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 cursor-pointer hover:bg-border/20 text-muted"
+                    onClick={() => setColorPickerOpen(false)}
+                    title="Back"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <div className="h-4 w-[1px] bg-border/60 mx-0.5" />
+                  {/* Default/Reset color */}
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().unsetColor().run();
+                      setColorPickerOpen(false);
+                    }}
+                    className="w-5 h-5 rounded-full border border-border bg-text/20 hover:scale-110 transition-transform cursor-pointer relative flex items-center justify-center"
+                    title="Reset color"
+                  >
+                    <span className="w-3 h-0.5 bg-red-500 rotate-45 absolute" />
+                  </button>
+                  {/* Curated color buttons */}
+                  {[
+                    { hex: "#f43f5e", label: "Rose" },
+                    { hex: "#f97316", label: "Orange" },
+                    { hex: "#f59e0b", label: "Amber" },
+                    { hex: "#10b981", label: "Emerald" },
+                    { hex: "#3b82f6", label: "Blue" },
+                    { hex: "#8b5cf6", label: "Purple" },
+                    { hex: "#64748b", label: "Slate" },
+                  ].map((c) => (
+                    <button
+                      key={c.hex}
+                      onClick={() => {
+                        editor.chain().focus().setColor(c.hex).run();
+                        setColorPickerOpen(false);
+                      }}
+                      style={{ backgroundColor: c.hex }}
+                      className="w-5 h-5 rounded-full border border-border hover:scale-110 transition-transform cursor-pointer"
+                      title={c.label}
+                    />
+                  ))}
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                      editor.isActive("bold") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                    }`}
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    title="Bold"
+                  >
+                    <Bold className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                      editor.isActive("italic") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                    }`}
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    title="Italic"
+                  >
+                    <Italic className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                      editor.isActive("strike") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                    }`}
+                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                    title="Strikethrough"
+                  >
+                    <Strikethrough className="w-4 h-4" />
+                  </Button>
 
-              <div className="h-4 w-[1px] bg-border/60 mx-1" />
+                  <div className="h-4 w-[1px] bg-border/60 mx-1" />
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
-                  editor.isActive("link") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
-                }`}
-                onClick={() => {
-                  if (editor.isActive("link")) {
-                    editor.chain().focus().unsetLink().run();
-                  } else {
-                    const url = window.prompt("Enter URL:");
-                    if (url) {
-                      // Normalize URL
-                      let href = url.trim();
-                      if (href && !/^https?:\/\//i.test(href)) {
-                        href = `https://${href}`;
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 w-8 p-0 cursor-pointer hover:bg-border/20 ${
+                      editor.isActive("link") ? "text-accent bg-accent/8 border border-accent/20" : "text-muted"
+                    }`}
+                    onClick={() => {
+                      if (editor.isActive("link")) {
+                        editor.chain().focus().unsetLink().run();
+                      } else {
+                        const url = window.prompt("Enter URL:");
+                        if (url) {
+                          let href = url.trim();
+                          if (href && !/^https?:\/\//i.test(href)) {
+                            href = `https://${href}`;
+                          }
+                          editor.chain().focus().setLink({ href, target: "_blank" }).run();
+                        }
                       }
-                      editor.chain().focus().setLink({ href, target: "_blank" }).run();
-                    }
-                  }
-                }}
-                title={editor.isActive("link") ? "Remove Link" : "Add Link"}
-              >
-                <LinkIcon className="w-4 h-4" />
-              </Button>
+                    }}
+                    title={editor.isActive("link") ? "Remove Link" : "Add Link"}
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                  </Button>
+
+                  <div className="h-4 w-[1px] bg-border/60 mx-1" />
+
+                  {/* Color Selector Toggle button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 cursor-pointer hover:bg-border/20 text-muted flex items-center justify-center"
+                    onClick={() => setColorPickerOpen(true)}
+                    title="Text Color"
+                  >
+                    {/* Render circle of active color or palette icon */}
+                    <span 
+                      style={{ 
+                        backgroundColor: editor.getAttributes("textStyle").color || "currentColor" 
+                      }} 
+                      className="w-4 h-4 rounded-full border border-border shadow-sm"
+                    />
+                  </Button>
+                </>
+              )}
             </Card>
           </BubbleMenu>
         )}
