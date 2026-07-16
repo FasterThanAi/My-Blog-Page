@@ -153,8 +153,8 @@ export function FollowingFeed({ selectedTag }: FollowingFeedProps) {
         title="No articles in Following feed"
         description="You are not following any authors with published articles yet, or you are browsing logged out."
         action={
-          <Link href="/explore">
-            <Button size="sm" onClick={() => window.location.reload()}>
+          <Link href="/search">
+            <Button size="sm">
               Discover Authors
             </Button>
           </Link>
