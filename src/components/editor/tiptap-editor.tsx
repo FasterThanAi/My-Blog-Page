@@ -499,13 +499,13 @@ export function TiptapEditor({
 
       {/* Floating Side Toolbar - Responsive */}
       {editor && (
-        <div className="flex md:flex-col items-center gap-1.5 p-1.5 bg-surface border border-border rounded-16 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mb-4 md:mb-0 md:sticky md:top-20 md:self-start z-10 w-fit shrink-0">
+        <div className="flex md:flex-col items-center gap-1.5 p-1.5 bg-surface border border-border rounded-16 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mb-4 md:mb-0 md:sticky md:top-20 md:self-start z-10 w-full md:w-fit shrink-0 overflow-x-auto no-scrollbar">
           {aiEnabled && (
             <>
               <Button
                 variant="ghost"
                 size="sm"
-                className={`h-8 w-8 p-0 cursor-pointer transition-colors ${
+                className={`h-8 w-8 p-0 cursor-pointer shrink-0 transition-colors ${
                   aiSessionOpen
                     ? "text-accent bg-accent/8 border border-accent/20 hover:bg-accent/12"
                     : "text-muted hover:bg-border/20"
@@ -515,13 +515,13 @@ export function TiptapEditor({
               >
                 <Sparkles className="w-4 h-4" />
               </Button>
-              <div className="h-[1px] w-5 bg-border md:my-0.5" />
+              <div className="w-[1px] h-5 md:w-5 md:h-[1px] bg-border md:my-0.5 shrink-0" />
             </>
           )}
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer shrink-0"
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             title="Heading 1"
           >
@@ -530,7 +530,7 @@ export function TiptapEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer shrink-0"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             title="Heading 2"
           >
@@ -539,7 +539,7 @@ export function TiptapEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer shrink-0"
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             title="Heading 3"
           >
@@ -548,7 +548,7 @@ export function TiptapEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer shrink-0"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             title="Bullet List"
           >
@@ -557,7 +557,7 @@ export function TiptapEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer shrink-0"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Blockquote"
           >
@@ -566,7 +566,7 @@ export function TiptapEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer shrink-0"
             onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
             title="Insert Table"
           >
@@ -575,7 +575,7 @@ export function TiptapEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-text cursor-pointer shrink-0"
             onClick={() => fileInputRef.current?.click()}
             title="Upload Image"
           >
@@ -584,7 +584,7 @@ export function TiptapEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-border/20 text-accent bg-accent/8 border border-accent/20 cursor-pointer"
+            className="h-8 w-8 p-0 hover:bg-border/20 text-accent bg-accent/8 border border-accent/20 cursor-pointer shrink-0"
             onClick={() => handleTriggerDrawing(null)}
             title="Insert Sketch Drawing"
           >

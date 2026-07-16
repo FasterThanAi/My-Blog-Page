@@ -291,7 +291,7 @@ export function AiPanel({ editor, onApplyTitle, onApplyDescription }: AiPanelPro
   };
 
   return (
-    <div className="w-[320px] shrink-0 border border-border bg-surface rounded-16 p-4 flex flex-col gap-4 self-start sticky top-20 h-[calc(100vh-120px)] overflow-y-auto select-none">
+    <div className="w-full lg:w-[320px] shrink-0 border border-border bg-surface rounded-16 p-4 flex flex-col gap-4 self-start sticky top-20 h-auto lg:h-[calc(100vh-120px)] overflow-y-auto select-none">
       <div className="flex items-center gap-2 border-b border-border pb-3 mb-1">
         <div className="p-1.5 rounded-8 bg-accent/8 border border-accent/20">
           <Sparkles className="w-4 h-4 text-accent" />

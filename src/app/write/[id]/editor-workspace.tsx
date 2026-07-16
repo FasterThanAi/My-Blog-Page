@@ -326,8 +326,8 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
       </div>
 
       {/* Editor Content Area */}
-      <div className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 py-12 flex gap-8 items-start relative">
-        <div className="flex-1 min-w-0 flex flex-col items-center">
+      <div className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 py-12 flex flex-col lg:flex-row gap-8 items-start relative">
+        <div className="flex-1 min-w-0 w-full flex flex-col items-center">
           <div className="w-full max-w-[720px] flex flex-col">
             {/* Title Input field */}
             <input
