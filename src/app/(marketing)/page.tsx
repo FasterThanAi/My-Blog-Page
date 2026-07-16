@@ -275,9 +275,9 @@ export default function MarketingPage() {
             <EmptyState
               icon={BookOpen}
               title="No published posts yet"
-              description="Be the first one to publish an article! Sign in and write a draft to begin."
+              description={user ? "Be the first one to publish an article! Write a draft to begin." : "Be the first one to publish an article! Sign in and write a draft to begin."}
               action={
-                <Link href="/auth/sign-in">
+                <Link href={user ? "/write" : "/auth/sign-in"}>
                   <Button size="sm">Create First Post</Button>
                 </Link>
               }
@@ -301,9 +301,15 @@ export default function MarketingPage() {
             <Link href="/styleguide" className="text-13 text-muted hover:text-text transition-colors">
               Styleguide
             </Link>
-            <Link href="/auth/sign-in" className="text-13 text-muted hover:text-text transition-colors">
-              Sign In
-            </Link>
+            {user ? (
+              <Link href="/write" className="text-13 text-muted hover:text-text transition-colors">
+                Workspace
+              </Link>
+            ) : (
+              <Link href="/auth/sign-in" className="text-13 text-muted hover:text-text transition-colors">
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </footer>
