@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { RobotGuide } from "@/components/ui/robot-guide";
 import { getPublicLatestPostsAction } from "@/app/actions/public-posts";
 import {
   ArrowRight,
@@ -324,6 +325,7 @@ export default function MarketingPage() {
           </div>
         </div>
       </footer>
+      <RobotGuide />
     </div>
   );
 }
