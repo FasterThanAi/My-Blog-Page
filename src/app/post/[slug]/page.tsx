@@ -287,6 +287,10 @@ export default async function PostDetailPage({ params }: PageProps) {
             initialBookmarked={initialBookmarked}
             initialFollowed={initialFollowed}
             isOwnPost={isOwnPost}
+            postTitle={post.title || "Untitled"}
+            postContent={post.content}
+            postExcerpt={post.excerpt}
+            postCoverUrl={post.cover_image_url}
           />
 
           {/* Discussion comments thread section */}

@@ -2,6 +2,8 @@
 
 import { ThemeProvider } from "next-themes";
 import { ToastProvider } from "@/components/ui/toast";
+import { AudioReaderProvider } from "@/context/audio-reader-context";
+import { AudioPlayerBar } from "@/components/audio/audio-player-bar";
 import * as React from "react";
 
 if (typeof window !== "undefined") {
@@ -24,7 +26,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        <AudioReaderProvider>
+          {children}
+          <AudioPlayerBar />
+        </AudioReaderProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

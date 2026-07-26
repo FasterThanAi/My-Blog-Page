@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast";
 import { Users, Heart } from "lucide-react";
+import { AudioListenButton } from "@/components/audio/audio-listen-button";
 import { Button } from "@/components/ui/button";
 
 interface PostItem {
@@ -202,6 +203,16 @@ export function FollowingFeed({ selectedTag }: FollowingFeedProps) {
 
               <div className="flex items-center gap-4 mt-3 text-13 text-muted select-none">
                 <span>{post.reading_time_minutes || 1} min read</span>
+                <AudioListenButton
+                  variant="compact"
+                  post={{
+                    id: post.id,
+                    title: post.title,
+                    excerpt: post.excerpt,
+                    coverUrl: post.cover_image_url,
+                    authorName: post.profiles.display_name || post.profiles.username,
+                  }}
+                />
                 {post.reactions?.[0]?.count > 0 && (
                   <span className="flex items-center gap-1.5 text-red-500 font-medium">
                     <Heart className="w-3.5 h-3.5 fill-current" />

@@ -18,6 +18,7 @@ import {
   Clock,
   Eye,
 } from "lucide-react";
+import { AudioListenButton } from "@/components/audio/audio-listen-button";
 
 interface PostActionsProps {
   postId: string;
@@ -34,6 +35,10 @@ interface PostActionsProps {
   initialBookmarked: boolean;
   initialFollowed: boolean;
   isOwnPost: boolean;
+  postTitle?: string;
+  postContent?: unknown;
+  postExcerpt?: string | null;
+  postCoverUrl?: string | null;
 }
 
 export function PostActions({
@@ -51,6 +56,10 @@ export function PostActions({
   initialBookmarked,
   initialFollowed,
   isOwnPost,
+  postTitle = "Untitled Article",
+  postContent,
+  postExcerpt,
+  postCoverUrl,
 }: PostActionsProps) {
   const { toast } = useToast();
 
@@ -152,6 +161,18 @@ export function PostActions({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* AI Audio Reader Listen Button */}
+          <AudioListenButton
+            post={{
+              id: postId,
+              title: postTitle,
+              content: postContent,
+              excerpt: postExcerpt,
+              authorName: authorDisplayName || authorUsername,
+              coverUrl: postCoverUrl,
+            }}
+          />
+
           {/* Reaction Button (Optimistic) */}
           <button
             type="button"
