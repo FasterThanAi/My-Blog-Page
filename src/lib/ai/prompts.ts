@@ -170,6 +170,102 @@ ${body}
 };
 
 /**
+ * CONTRACT FOR TRANSLATION:
+ * - Receives a post title, an array of paragraph strings, and a target language name.
+ * - Must return a raw JSON block: { "title": string, "paragraphs": string[] }.
+ * - "paragraphs" must be the same length and order as the input array.
+ * - No markdown wrapping, no fluff. Only return valid, parsable JSON.
+ */
+export const translatePrompt = (title: string, paragraphs: string[], targetLanguage: string) => `
+You are a professional translator. Translate the following blog post into ${targetLanguage}.
+
+CRITICAL RULES:
+1. Return your output EXACTLY as a valid JSON object matching this schema:
+   { "title": "translated title", "paragraphs": ["translated paragraph 1", "translated paragraph 2", ...] }
+2. The "paragraphs" array MUST have exactly the same number of entries, in the same order, as the input array.
+3. Preserve meaning and tone faithfully. Do not summarize, add, or omit content.
+4. DO NOT wrap the JSON in markdown code blocks (\`\`\`json).
+5. DO NOT include any explanatory text outside the JSON. Return only the raw JSON string.
+
+Title:
+"""
+${title}
+"""
+
+Paragraphs (JSON array, translate each element):
+${JSON.stringify(paragraphs)}
+`.trim();
+
+/**
+ * CONTRACT FOR COMMENT MODERATION:
+ * - Receives a single comment body.
+ * - Classifies whether it's toxic, harassing, spam, or a scam/phishing attempt.
+ * - Must return a raw JSON block: { "flagged": boolean, "category": string, "reason": string }.
+ * - "category" is one of: "toxicity", "harassment", "spam", "scam", "none".
+ * - No markdown wrapping, no fluff. Only return valid, parsable JSON.
+ */
+export const moderateCommentPrompt = (body: string) => `
+You are a content moderation classifier for a blog's comment section. Review the comment below.
+
+CRITICAL RULES:
+1. Return your output EXACTLY as a valid JSON object matching this schema:
+   {
+     "flagged": true or false,
+     "category": "toxicity" | "harassment" | "spam" | "scam" | "none",
+     "reason": "One short sentence explaining the classification (max 140 characters)"
+   }
+2. Only set "flagged": true for genuinely toxic, harassing, spammy, or scam/phishing content.
+   Do NOT flag strong opinions, criticism, sarcasm, or disagreement — those are normal discourse.
+3. When in doubt, do not flag. False positives are worse than false negatives here.
+4. DO NOT wrap the JSON in markdown code blocks (\`\`\`json).
+5. DO NOT include any explanatory text outside the JSON. Return only the raw JSON string.
+
+Comment:
+"""
+${body}
+"""
+`.trim();
+
+/**
+ * CONTRACT FOR COVER IMAGE GENERATION:
+ * - Receives a post title and a short excerpt/summary.
+ * - Returns a plain-text image generation prompt (not JSON) describing an
+ *   editorial cover illustration — the image model itself does the rendering.
+ */
+export const coverImagePrompt = (title: string, excerpt: string) => `
+A minimalist, editorial blog cover illustration for an article titled "${title}". ${
+  excerpt ? `The article is about: ${excerpt}.` : ""
+}
+Style: bold flat-design illustration, warm off-white background, high contrast, a single strong focal concept representing the article's theme, no readable text or letters in the image, wide 16:9 composition, professional tech/editorial blog aesthetic.
+`.trim();
+
+/**
+ * CONTRACT FOR ASK-THE-ARCHIVE RAG CHAT:
+ * - Receives a reader's question plus retrieved excerpts from the most
+ *   relevant posts (each tagged with an index so the model can cite them).
+ * - Must answer using ONLY the provided excerpts — no outside knowledge.
+ * - Must return a raw JSON block: { "answer": string, "citedIndexes": number[] }.
+ */
+export const ragChatPrompt = (
+  question: string,
+  excerpts: { index: number; title: string; text: string }[]
+) => `
+You are "Ask the Archive", a research assistant that answers questions using ONLY the blog excerpts provided below. You do not have any other knowledge of this blog.
+
+Excerpts:
+${excerpts.map((e) => `[${e.index}] "${e.title}"\n${e.text}`).join("\n\n")}
+
+Question: ${question}
+
+CRITICAL RULES:
+1. Answer using ONLY the information in the excerpts above. If the excerpts don't contain enough information to answer, say so honestly instead of guessing.
+2. Return your output EXACTLY as a valid JSON object matching this schema:
+   { "answer": "your answer, written in plain prose, 2-5 sentences", "citedIndexes": [numbers of excerpts you actually used] }
+3. DO NOT wrap the JSON in markdown code blocks (\`\`\`json).
+4. DO NOT include any explanatory text outside the JSON. Return only the raw JSON string.
+`.trim();
+
+/**
  * CONTRACT FOR ALT TEXT:
  * - Receives description of the image or analysis request.
  * - Must return a short, descriptive alt-text sentence (no fluff, max 120 characters).

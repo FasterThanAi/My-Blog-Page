@@ -27,6 +27,7 @@ import {
   Maximize2,
   Minimize2,
   Camera,
+  Sparkles,
   X,
 } from "lucide-react";
 
@@ -89,6 +90,7 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
   const [publishSheetOpen, setPublishSheetOpen] = React.useState(false);
   const [coverImageUrl, setCoverImageUrl] = React.useState(post.cover_image_url || "");
   const [uploadingCover, setUploadingCover] = React.useState(false);
+  const [generatingCover, setGeneratingCover] = React.useState(false);
   const [excerpt, setExcerpt] = React.useState(post.excerpt || "");
   const [tags, setTags] = React.useState<string[]>(initialTags);
   const [tagInput, setTagInput] = React.useState("");
@@ -201,6 +203,33 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
       toast(message, "error");
     } finally {
       setUploadingCover(false);
+    }
+  };
+
+  // AI cover image generation
+  const handleGenerateCover = async () => {
+    if (!title.trim()) {
+      toast("Add a title first so the AI knows what to illustrate.", "error");
+      return;
+    }
+
+    setGeneratingCover(true);
+    try {
+      const res = await fetch("/api/ai/cover-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: post.id, title, excerpt }),
+      });
+      const result = await res.json();
+      if (!res.ok || result.error) throw new Error(result.error || "Failed to generate cover image");
+
+      setCoverImageUrl(result.url);
+      toast("Cover image generated", "success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to generate cover image";
+      toast(message, "error");
+    } finally {
+      setGeneratingCover(false);
     }
   };
 
@@ -486,19 +515,37 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center gap-2 cursor-pointer">
-                  <Camera className="w-6 h-6 text-muted" />
-                  <span className="text-13 text-muted">
-                    {uploadingCover ? "Uploading cover image..." : "Upload Cover Image"}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverUpload}
-                    className="hidden"
-                    disabled={uploadingCover}
-                  />
-                </label>
+                <div className="flex flex-col items-center gap-3">
+                  <label className="flex flex-col items-center gap-2 cursor-pointer">
+                    <Camera className="w-6 h-6 text-muted" />
+                    <span className="text-13 text-muted">
+                      {uploadingCover ? "Uploading cover image..." : "Upload Cover Image"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverUpload}
+                      className="hidden"
+                      disabled={uploadingCover}
+                    />
+                  </label>
+                  {aiEnabled && (
+                    <>
+                      <span className="text-11 text-muted">or</span>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleGenerateCover}
+                        disabled={generatingCover || uploadingCover}
+                        className="text-12 h-8 px-3 flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {generatingCover ? "Generating..." : "Generate with AI"}
+                      </Button>
+                    </>
+                  )}
+                </div>
               )}
             </Card>
           </div>

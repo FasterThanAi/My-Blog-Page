@@ -11,6 +11,8 @@ import { ViewIncrementer } from "@/components/post/view-incrementer";
 import { ReadingProgress } from "@/components/post/reading-progress";
 import { AiSummaryCard } from "@/components/post/ai-summary-card";
 import { HighlightToolbar } from "@/components/post/highlight-toolbar";
+import { TranslateWidget } from "@/components/post/translate-widget";
+import { LiveReaders } from "@/components/post/live-readers";
 import { ArrowLeft } from "lucide-react";
 import { CommentSection } from "@/components/post/comment-section";
 
@@ -277,13 +279,20 @@ export default async function PostDetailPage({ params }: PageProps) {
           )}
 
           {/* Heading title */}
-          <h1 className={`text-40 md:text-52 font-semibold tracking-tight leading-tight mb-8 ${post.is_hidden ? "text-muted italic select-none" : "text-text"}`}>
+          <h1 className={`text-40 md:text-52 font-semibold tracking-tight leading-tight mb-2 ${post.is_hidden ? "text-muted italic select-none" : "text-text"}`}>
             {post.is_hidden ? "[removed by moderator]" : (post.title || "Untitled")}
           </h1>
+
+          {!post.is_hidden && <LiveReaders postId={post.id} />}
 
           {/* AI-generated TL;DR summary card */}
           {aiSummaryEnabled && !post.is_hidden && (
             <AiSummaryCard postId={post.id} />
+          )}
+
+          {/* On-demand AI translation */}
+          {aiSummaryEnabled && !post.is_hidden && (
+            <TranslateWidget postId={post.id} />
           )}
 
           {/* Semantic SSR content renderer */}

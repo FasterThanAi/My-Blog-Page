@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { LatestFeed } from "./latest-feed";
 import { TrendingFeed } from "./trending-feed";
 import { FollowingFeed } from "./following-feed";
+import { ForYouFeed } from "./for-you-feed";
 import { useToast } from "@/components/ui/toast";
 
 export default function ExplorePage() {
@@ -42,6 +43,7 @@ export default function ExplorePage() {
     { id: "latest", label: "Latest Feed" },
     { id: "trending", label: "Trending" },
     { id: "following", label: "Following" },
+    { id: "for-you", label: "For You" },
   ];
 
   const handleTagToggle = (tag: string) => {
@@ -90,6 +92,7 @@ export default function ExplorePage() {
           {activeTab === "latest" && <LatestFeed selectedTag={selectedTag} />}
           {activeTab === "trending" && <TrendingFeed selectedTag={selectedTag} />}
           {activeTab === "following" && <FollowingFeed selectedTag={selectedTag} />}
+          {activeTab === "for-you" && <ForYouFeed />}
         </div>
       </main>
     </div>

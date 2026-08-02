@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Providers } from "./providers";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { ServiceWorkerRegister } from "@/components/ui/sw-register";
+import { AskArchiveWidget } from "@/components/ui/ask-archive-widget";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({
           {children}
           <CommandPalette />
           <ServiceWorkerRegister />
+          <AskArchiveWidget />
         </Providers>
       </body>
     </html>

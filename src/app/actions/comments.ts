@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
+import { classifyComment } from "@/lib/ai/moderate-comment";
 
 const createCommentSchema = z.object({
   postId: z.string().uuid(),
@@ -59,6 +60,35 @@ export async function createCommentAction(input: unknown) {
   if (commentError || !comment) {
     throw new Error(commentError?.message || "Failed to create comment.");
   }
+
+  // AI comment moderation (asynchronously, never blocks comment creation).
+  // Flagged comments are logged into the existing reports queue for a human
+  // moderator to review — the comment itself stays visible unless/until a
+  // moderator acts on it.
+  (async () => {
+    try {
+      const { data: aiFlag } = await supabase
+        .from("feature_flags")
+        .select("enabled")
+        .eq("key", "ai_assistant")
+        .maybeSingle();
+
+      if (aiFlag && !aiFlag.enabled) return;
+
+      const result = await classifyComment(body);
+      if (result.flagged && result.category !== "none") {
+        await supabase.from("reports").insert({
+          reporter_id: user.id,
+          post_id: postId,
+          comment_id: comment.id,
+          reason: `Auto-flagged by AI moderation (${result.category}): ${result.reason || "no reason given"}`,
+          status: "open",
+        });
+      }
+    } catch (err) {
+      console.error("Comment moderation error:", err);
+    }
+  })();
 
   // Trigger notification logs (asynchronously)
   try {

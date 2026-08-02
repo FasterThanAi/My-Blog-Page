@@ -31,3 +31,31 @@ export function tiptapToPlainText(doc: unknown, maxChars = 12000): string {
 
   return parts.join(" ").replace(/\s+/g, " ").replace(/ \n/g, "\n").trim().slice(0, maxChars);
 }
+
+/**
+ * Flattens a Tiptap/ProseMirror JSON document into an array of paragraph
+ * strings (one per top-level block node). Used for translation, where we
+ * want to preserve paragraph breaks without carrying over rich formatting.
+ */
+export function tiptapToParagraphs(doc: unknown, maxParagraphs = 60): string[] {
+  if (!doc || typeof doc !== "object") return [];
+
+  const paragraphs: string[] = [];
+
+  const extractText = (node: TiptapNode): string => {
+    if (node.type === "text" && node.text) return node.text;
+    if (node.content) return node.content.map(extractText).join(" ");
+    return "";
+  };
+
+  const root = doc as TiptapNode;
+  if (root.content) {
+    for (const block of root.content) {
+      const text = extractText(block).replace(/\s+/g, " ").trim();
+      if (text) paragraphs.push(text);
+      if (paragraphs.length >= maxParagraphs) break;
+    }
+  }
+
+  return paragraphs;
+}

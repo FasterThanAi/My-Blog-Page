@@ -6,6 +6,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional().default(""),
   GEMINI_API_KEY: z.string().optional().default(""),
   GEMINI_MODEL: z.string().optional().default("gemini-2.0-flash"),
+  GEMINI_IMAGE_MODEL: z.string().optional().default("gemini-2.0-flash-preview-image-generation"),
   NEXT_PUBLIC_SITE_URL: z.string().optional().default("http://localhost:3000"),
 });
 
@@ -20,6 +21,7 @@ const getEnv = () => {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GEMINI_MODEL: process.env.GEMINI_MODEL,
+    GEMINI_IMAGE_MODEL: process.env.GEMINI_IMAGE_MODEL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   });
 

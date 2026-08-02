@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { snapshotPostVersionIfDue } from "./post-versions";
+import { syncPostEmbedding } from "@/lib/ai/post-embedding-sync";
 
 // Helper to normalize and generate URL-safe slugs
 function slugify(text: string): string {
@@ -369,6 +370,9 @@ export async function publishPostAction(input: unknown) {
       );
     }
   }
+
+  // Keep semantic search embeddings in sync (fire-and-forget; never blocks publish)
+  syncPostEmbedding(supabase, id).catch(() => {});
 
   return { success: true, slug };
 }

@@ -1,11 +1,12 @@
 import { env } from "@/lib/env";
 export const GEMINI_MODEL = env.GEMINI_MODEL;
+export const GEMINI_IMAGE_MODEL = env.GEMINI_IMAGE_MODEL;
 
 /**
  * Helper to generate Gemini REST URL
  */
-function getGeminiUrl(action: "generateContent" | "streamGenerateContent") {
-  return `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:${action}?key=${env.GEMINI_API_KEY}`;
+function getGeminiUrl(action: "generateContent" | "streamGenerateContent", model: string = GEMINI_MODEL) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${env.GEMINI_API_KEY}`;
 }
 
 /**
@@ -97,6 +98,55 @@ export async function queryGeminiVision(
 
   const data = await response.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+/**
+ * Generates an image with Gemini's image-generation model. Returns the raw
+ * base64 image data + mime type. Requires GEMINI_IMAGE_MODEL to be a model
+ * your API key actually has access to — image generation is not enabled
+ * for every Gemini API key/tier, so callers should surface a clear error
+ * if this fails rather than assuming it will always work.
+ */
+export async function generateGeminiImage(
+  prompt: string
+): Promise<{ base64: string; mimeType: string }> {
+  const url = getGeminiUrl("generateContent", GEMINI_IMAGE_MODEL);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ["TEXT", "IMAGE"],
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini Image API Error (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  const imagePart = parts.find((part: { inlineData?: { data?: string; mimeType?: string } }) => part.inlineData?.data);
+
+  if (!imagePart?.inlineData?.data) {
+    throw new Error(
+      "Gemini did not return an image. Your GEMINI_API_KEY may not have access to the image generation model."
+    );
+  }
+
+  return {
+    base64: imagePart.inlineData.data,
+    mimeType: imagePart.inlineData.mimeType || "image/png",
+  };
 }
 
 /**
