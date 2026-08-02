@@ -10,6 +10,7 @@ import { PostActions } from "@/components/post/post-actions";
 import { ViewIncrementer } from "@/components/post/view-incrementer";
 import { ReadingProgress } from "@/components/post/reading-progress";
 import { AiSummaryCard } from "@/components/post/ai-summary-card";
+import { HighlightToolbar } from "@/components/post/highlight-toolbar";
 import { ArrowLeft } from "lucide-react";
 import { CommentSection } from "@/components/post/comment-section";
 
@@ -237,6 +238,16 @@ export default async function PostDetailPage({ params }: PageProps) {
       {/* Scroll progress bar + resume-where-you-left-off prompt */}
       <ReadingProgress postId={post.id} initialScrollPercent={initialScrollPercent} />
 
+      {/* Floating highlight-and-share toolbar for text selections in the article body */}
+      {!post.is_hidden && (
+        <HighlightToolbar
+          postId={post.id}
+          postTitle={post.title || "Untitled"}
+          authorName={post.profiles.display_name || post.profiles.username}
+          containerSelector="[data-article-body]"
+        />
+      )}
+
       <main className="flex-1 w-full max-w-4xl mx-auto px-6 py-12 flex flex-col items-center">
         {/* Back navigation header link */}
         <div className="w-full max-w-[68ch] select-none mb-8">
@@ -276,7 +287,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           )}
 
           {/* Semantic SSR content renderer */}
-          <div className="tiptap-reading-page">
+          <div className="tiptap-reading-page" data-article-body>
             {post.is_hidden ? (
               <p className="text-15 text-muted italic select-none">[removed by moderator]</p>
             ) : (

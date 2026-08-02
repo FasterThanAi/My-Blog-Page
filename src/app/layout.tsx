@@ -1,11 +1,22 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Providers } from "./providers";
 import { CommandPalette } from "@/components/ui/command-palette";
+import { ServiceWorkerRegister } from "@/components/ui/sw-register";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SaaS Blog",
   description: "Minimalist reading page & drawings",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SaaS Blog",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#201E1D",
 };
 
 export default function RootLayout({
@@ -19,6 +30,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <CommandPalette />
+          <ServiceWorkerRegister />
         </Providers>
       </body>
     </html>

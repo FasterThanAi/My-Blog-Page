@@ -16,6 +16,8 @@ import { TiptapEditor } from "@/components/editor/tiptap-editor";
 import { savePostAction, publishPostAction } from "@/app/actions/posts";
 import { Editor } from "@tiptap/react";
 import { AiPanel } from "@/components/editor/ai-panel";
+import { VersionHistory } from "@/components/editor/version-history";
+import { RepurposePanel } from "@/components/editor/repurpose-panel";
 import {
   ArrowLeft,
   EyeOff,
@@ -317,6 +319,16 @@ export function EditorWorkspace({ post, initialTags, aiEnabled = false }: Editor
               {focusMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               {focusMode ? "Exit Focus" : "Focus"}
             </Button>
+            <VersionHistory
+              postId={post.id}
+              currentContent={content}
+              onRestored={(restoredTitle, restoredContent) => {
+                setTitle(restoredTitle);
+                setContent(restoredContent);
+                editorInstance?.commands.setContent(restoredContent as never);
+              }}
+            />
+            {aiEnabled && <RepurposePanel currentContent={content} />}
             <Button size="sm" onClick={handleOpenPublishSheet} className="flex items-center gap-1.5">
               <Settings className="w-4 h-4" />
               Publish

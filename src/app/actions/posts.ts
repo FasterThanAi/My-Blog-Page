@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { snapshotPostVersionIfDue } from "./post-versions";
 
 // Helper to normalize and generate URL-safe slugs
 function slugify(text: string): string {
@@ -145,6 +146,9 @@ export async function savePostAction(input: unknown) {
   if (updateError) {
     throw new Error(updateError.message);
   }
+
+  // Throttled revision snapshot (at most once every few minutes per post)
+  await snapshotPostVersionIfDue(supabase, id, user.id, title, content);
 
   return { success: true };
 }

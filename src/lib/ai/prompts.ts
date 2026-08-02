@@ -135,6 +135,41 @@ ${body}
 `.trim();
 
 /**
+ * CONTRACT FOR REPURPOSING:
+ * - Receives the full plain-text body of a published post plus a target format.
+ * - Must return a raw JSON block containing key "output" (string).
+ * - No markdown wrapping, no fluff. Only return valid, parsable JSON.
+ */
+export const repurposePrompt = (body: string, format: "twitter_thread" | "linkedin_post" | "newsletter_blurb") => {
+  const formatInstructions: Record<typeof format, string> = {
+    twitter_thread:
+      'Write a Twitter/X thread (5-8 tweets). Separate each tweet with "\\n\\n---\\n\\n". Number tweets like "1/", "2/", etc. Each tweet must fit in 280 characters. Open with a strong hook.',
+    linkedin_post:
+      "Write a single LinkedIn post (150-300 words). Professional but conversational tone, short paragraphs, an attention-grabbing first line, and a closing line inviting discussion.",
+    newsletter_blurb:
+      "Write a short newsletter teaser blurb (2-3 sentences, under 60 words) that would entice a subscriber to click through and read the full post.",
+  };
+
+  return `
+You are a content repurposing assistant. Turn the blog post below into a ${format.replace("_", " ")}.
+
+${formatInstructions[format]}
+
+CRITICAL RULES:
+1. Return your output EXACTLY as a valid JSON object matching this schema:
+   { "output": "the repurposed content as a single string" }
+2. Base it strictly on the content given. Do not invent facts not present in the text.
+3. DO NOT wrap the JSON in markdown code blocks (\`\`\`json).
+4. DO NOT include any explanatory text outside the JSON. Return only the raw JSON string.
+
+Post content:
+"""
+${body}
+"""
+`.trim();
+};
+
+/**
  * CONTRACT FOR ALT TEXT:
  * - Receives description of the image or analysis request.
  * - Must return a short, descriptive alt-text sentence (no fluff, max 120 characters).
