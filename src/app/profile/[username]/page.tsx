@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { GlassNav } from "@/components/ui/glass-nav";
 import { ProfileLayout } from "@/components/profile/profile-layout";
 import { computeReadingStreak } from "@/lib/reading-streak";
+import { getSiteDomain } from "@/lib/activitypub/site";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
@@ -96,6 +97,11 @@ export default async function ProfilePage({ params }: PageProps) {
     .select("*", { count: "exact", head: true })
     .eq("follower_id", profile.id);
 
+  const { count: fediverseFollowersCount } = await supabase
+    .from("activitypub_followers")
+    .select("*", { count: "exact", head: true })
+    .eq("profile_id", profile.id);
+
   // 4. Resolve public published posts authored by this user
   const { data: posts } = await supabase
     .from("posts")
@@ -173,6 +179,8 @@ export default async function ProfilePage({ params }: PageProps) {
           readingStreak={readingStreak}
           initialFollowed={initialFollowed}
           isOwnProfile={isOwnProfile}
+          fediverseHandle={`@${profile.username}@${getSiteDomain()}`}
+          fediverseFollowersCount={fediverseFollowersCount || 0}
         />
       </main>
     </div>

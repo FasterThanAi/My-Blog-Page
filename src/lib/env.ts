@@ -8,6 +8,7 @@ const envSchema = z.object({
   GEMINI_MODEL: z.string().optional().default("gemini-2.0-flash"),
   GEMINI_IMAGE_MODEL: z.string().optional().default("gemini-2.5-flash-image"),
   CRON_SECRET: z.string().optional().default(""),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(""),
   NEXT_PUBLIC_SITE_URL: z.string().optional().default("http://localhost:3000"),
 });
 
@@ -24,6 +25,7 @@ const getEnv = () => {
     GEMINI_MODEL: process.env.GEMINI_MODEL,
     GEMINI_IMAGE_MODEL: process.env.GEMINI_IMAGE_MODEL,
     CRON_SECRET: process.env.CRON_SECRET,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   });
 

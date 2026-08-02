@@ -19,6 +19,9 @@ import {
   Lock,
   Heart,
   Flame,
+  Globe2,
+  Copy,
+  Check,
 } from "lucide-react";
 
 interface PostItem {
@@ -49,6 +52,8 @@ interface ProfileLayoutProps {
   readingStreak?: number;
   initialFollowed: boolean;
   isOwnProfile: boolean;
+  fediverseHandle?: string;
+  fediverseFollowersCount?: number;
 }
 
 export function ProfileLayout({
@@ -61,6 +66,8 @@ export function ProfileLayout({
   readingStreak = 0,
   initialFollowed,
   isOwnProfile,
+  fediverseHandle,
+  fediverseFollowersCount = 0,
 }: ProfileLayoutProps) {
   const { toast } = useToast();
 
@@ -68,6 +75,19 @@ export function ProfileLayout({
   const [followers, setFollowers] = React.useState(followersCount);
   const [followLoading, setFollowLoading] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("posts");
+  const [handleCopied, setHandleCopied] = React.useState(false);
+
+  const handleCopyFediverseHandle = async () => {
+    if (!fediverseHandle) return;
+    try {
+      await navigator.clipboard.writeText(fediverseHandle);
+      setHandleCopied(true);
+      toast("Fediverse handle copied", "success");
+      setTimeout(() => setHandleCopied(false), 2000);
+    } catch {
+      toast("Failed to copy handle", "error");
+    }
+  };
 
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString("en-US", {
@@ -120,6 +140,21 @@ export function ProfileLayout({
               <span className="text-13 text-muted">@{profile.username}</span>
             </div>
             {profile.bio && <p className="text-15 text-muted leading-relaxed max-w-[500px]">{profile.bio}</p>}
+            {fediverseHandle && (
+              <button
+                type="button"
+                onClick={handleCopyFediverseHandle}
+                title="Copy fediverse handle — follow from Mastodon or any ActivityPub app"
+                className="flex items-center gap-1.5 text-12 text-muted hover:text-accent transition-colors w-fit cursor-pointer select-none"
+              >
+                <Globe2 className="w-3.5 h-3.5" />
+                <span>{fediverseHandle}</span>
+                {fediverseFollowersCount > 0 && (
+                  <span className="text-muted/70">· {fediverseFollowersCount} fediverse followers</span>
+                )}
+                {handleCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              </button>
+            )}
             <div className="flex flex-wrap items-center gap-4 text-13 text-muted mt-1.5">
               {profile.website_url && (
                 <a
