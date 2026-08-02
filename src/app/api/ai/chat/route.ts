@@ -48,52 +48,91 @@ export async function POST(request: Request) {
     }
 
     // 3. Opportunistically backfill a few missing embeddings (older posts)
-    await backfillMissingEmbeddings(supabase, 3);
-
-    // 4. Embed the question and retrieve the most relevant posts
-    const questionEmbedding = await embedText(question);
-    const { data: matches, error: matchError } = await supabase.rpc("match_posts", {
-      query_embedding: questionEmbedding,
-      match_count: 5,
-    });
-
-    if (matchError) throw new Error(matchError.message);
-
-    const matchRows = (matches || []) as { post_id: string; similarity: number }[];
-
-    if (matchRows.length === 0) {
-      return NextResponse.json({
-        answer: "I couldn't find any posts in the archive relevant to that question yet.",
-        sources: [],
-      });
+    try {
+      await backfillMissingEmbeddings(supabase, 3);
+    } catch {
+      // Ignore background sync errors
     }
 
-    // 5. Load post details for the matched posts + build excerpts
-    const postIds = matchRows.map((m) => m.post_id);
-    const { data: posts } = await supabase
-      .from("posts")
-      .select("id, title, slug, excerpt, content")
-      .in("id", postIds);
-
+    // 4. Try vector similarity match via match_posts RPC
     type PostRow = { id: string; title: string | null; slug: string | null; excerpt: string | null; content: unknown };
-    type ExcerptItem = { index: number; title: string; text: string };
+    let matchedPosts: PostRow[] = [];
 
-    const postsById = new Map<string, PostRow>((posts || []).map((p) => [p.id, p as PostRow]));
-    const excerpts: ExcerptItem[] = matchRows
-      .map((m, i): ExcerptItem | null => {
-        const post = postsById.get(m.post_id);
-        if (!post) return null;
-        const text = (post.excerpt || tiptapToPlainText(post.content, 800)).slice(0, 800);
-        return { index: i + 1, title: post.title || "Untitled", text };
-      })
-      .filter((e): e is ExcerptItem => e !== null);
+    try {
+      const questionEmbedding = await embedText(question);
+      const { data: matches, error: matchError } = await supabase.rpc("match_posts", {
+        query_embedding: questionEmbedding,
+        match_count: 5,
+      });
 
-    if (excerpts.length === 0) {
+      if (!matchError && Array.isArray(matches) && matches.length > 0) {
+        const matchRows = matches as { post_id: string; similarity: number }[];
+        const postIds = matchRows.map((m) => m.post_id);
+        const { data: vectorPosts } = await supabase
+          .from("posts")
+          .select("id, title, slug, excerpt, content")
+          .in("id", postIds);
+
+        if (vectorPosts && vectorPosts.length > 0) {
+          const postsMap = new Map((vectorPosts as PostRow[]).map((p) => [p.id, p]));
+          matchedPosts = matchRows.map((m) => postsMap.get(m.post_id)).filter((p): p is PostRow => p !== undefined);
+        }
+      }
+    } catch {
+      // Vector RPC missing or errored — fallback to keyword text search below
+    }
+
+    // Fallback: Keyword search across published posts if vector search returned nothing or RPC is missing
+    if (matchedPosts.length === 0) {
+      const keywords = question
+        .split(/\s+/)
+        .filter((w) => w.length > 3)
+        .slice(0, 3);
+
+      let query = supabase
+        .from("posts")
+        .select("id, title, slug, excerpt, content")
+        .eq("status", "published")
+        .eq("visibility", "public")
+        .eq("is_hidden", false)
+        .order("published_at", { ascending: false })
+        .limit(5);
+
+      if (keywords.length > 0) {
+        query = query.or(keywords.map((k) => `title.ilike.%${k}%,excerpt.ilike.%${k}%`).join(","));
+      }
+
+      const { data: fallbackPosts } = await query;
+      if (fallbackPosts && fallbackPosts.length > 0) {
+        matchedPosts = fallbackPosts as PostRow[];
+      } else {
+        // Ultimate fallback: get most recent published posts
+        const { data: latestPosts } = await supabase
+          .from("posts")
+          .select("id, title, slug, excerpt, content")
+          .eq("status", "published")
+          .eq("visibility", "public")
+          .eq("is_hidden", false)
+          .order("published_at", { ascending: false })
+          .limit(5);
+
+        matchedPosts = (latestPosts || []) as PostRow[];
+      }
+    }
+
+    if (matchedPosts.length === 0) {
       return NextResponse.json({
-        answer: "I couldn't find any posts in the archive relevant to that question yet.",
+        answer: "I couldn't find any published posts in the archive relevant to that question yet.",
         sources: [],
       });
     }
+
+    // 5. Build excerpts for Gemini prompt
+    type ExcerptItem = { index: number; title: string; text: string };
+    const excerpts: ExcerptItem[] = matchedPosts.map((post, i) => {
+      const text = (post.excerpt || tiptapToPlainText(post.content, 800)).slice(0, 800);
+      return { index: i + 1, title: post.title || "Untitled", text };
+    });
 
     // 6. Ask Gemini to answer strictly from the excerpts
     const prompt = ragChatPrompt(question, excerpts);
@@ -128,8 +167,7 @@ export async function POST(request: Request) {
     const sources = excerpts
       .filter((e) => citedIndexes.has(e.index))
       .map((e) => {
-        const match = matchRows.find((m, i) => i + 1 === e.index);
-        const post = match ? postsById.get(match.post_id) : null;
+        const post = matchedPosts[e.index - 1];
         return post ? { postId: post.id, title: post.title || "Untitled", slug: post.slug || post.id } : null;
       })
       .filter((s): s is { postId: string; title: string; slug: string } => s !== null);
