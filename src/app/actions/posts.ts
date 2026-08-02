@@ -314,34 +314,59 @@ export async function publishPostAction(input: unknown) {
       if (!trimmedName) continue;
 
       const tagSlug = slugify(trimmedName);
+      if (!tagSlug) continue;
 
-      // Check if tag exists
+      // Check if tag exists by slug or name (case-insensitive)
       const { data: existingTag } = await supabase
         .from("tags")
         .select("id")
-        .eq("name", trimmedName)
+        .or(`slug.eq.${tagSlug},name.ilike.${trimmedName}`)
         .maybeSingle();
 
-      let tagId;
+      let tagId: string;
       if (existingTag) {
         tagId = existingTag.id;
       } else {
-        // Create tag
+        // Create tag safely
         const { data: newTag, error: tagCreateError } = await supabase
           .from("tags")
-          .insert({ name: trimmedName, slug: tagSlug })
+          .insert({ name: trimmedName.toLowerCase(), slug: tagSlug })
           .select("id")
-          .single();
+          .maybeSingle();
 
-        if (tagCreateError) throw tagCreateError;
-        tagId = newTag.id;
+        if (tagCreateError) {
+          // Fallback if tag was created concurrently or slug collided
+          const { data: fallbackTag } = await supabase
+            .from("tags")
+            .select("id")
+            .eq("slug", tagSlug)
+            .maybeSingle();
+
+          if (fallbackTag) {
+            tagId = fallbackTag.id;
+          } else {
+            throw new Error(`Failed to process tag "${trimmedName}": ${tagCreateError.message}`);
+          }
+        } else if (newTag) {
+          tagId = newTag.id;
+        } else {
+          // Query tag by slug if insert returned empty
+          const { data: fetchTag } = await supabase
+            .from("tags")
+            .select("id")
+            .eq("slug", tagSlug)
+            .maybeSingle();
+
+          if (!fetchTag) throw new Error(`Failed to create tag "${trimmedName}"`);
+          tagId = fetchTag.id;
+        }
       }
 
       // Link post and tag
-      await supabase.from("post_tags").insert({
-        post_id: id,
-        tag_id: tagId,
-      });
+      await supabase.from("post_tags").upsert(
+        { post_id: id, tag_id: tagId },
+        { onConflict: "post_id,tag_id" }
+      );
     }
   }
 

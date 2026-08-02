@@ -25,7 +25,7 @@ export default async function WriteIdPage({ params }: PageProps) {
     .from("posts")
     .select("id, author_id, title, content, cover_image_url, excerpt, status, visibility, seo_title, seo_description")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   // 3. Return 404 if post doesn't exist or is owned by another user (quality gate security)
   if (error || !post || post.author_id !== user.id) {
@@ -47,13 +47,13 @@ export default async function WriteIdPage({ params }: PageProps) {
     .from("feature_flags")
     .select("enabled")
     .eq("key", "ai_assistant")
-    .single();
+    .maybeSingle();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("ai_assistant_enabled")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const aiEnabled = !!(flag?.enabled && profile?.ai_assistant_enabled);
 

@@ -243,7 +243,7 @@ export default async function PostDetailPage({ params }: PageProps) {
         <HighlightToolbar
           postId={post.id}
           postTitle={post.title || "Untitled"}
-          authorName={post.profiles.display_name || post.profiles.username}
+          authorName={post.profiles?.display_name || post.profiles?.username || "Anonymous"}
           containerSelector="[data-article-body]"
         />
       )}
@@ -314,10 +314,10 @@ export default async function PostDetailPage({ params }: PageProps) {
           <PostActions
             postId={post.id}
             authorId={post.author_id}
-            authorUsername={post.profiles.username}
-            authorDisplayName={post.profiles.display_name}
-            authorAvatarUrl={post.profiles.avatar_url}
-            authorBio={post.profiles.bio}
+            authorUsername={post.profiles?.username || "anonymous"}
+            authorDisplayName={post.profiles?.display_name || post.profiles?.username || "Anonymous"}
+            authorAvatarUrl={post.profiles?.avatar_url || null}
+            authorBio={post.profiles?.bio || null}
             publishedAt={post.published_at}
             readingTime={post.reading_time_minutes || 1}
             views={post.view_count || 0}
