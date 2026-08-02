@@ -21,6 +21,7 @@ function SignUpForm() {
   const [publicSignup, setPublicSignup] = React.useState(true);
   const [checkingFlag, setCheckingFlag] = React.useState(true);
   const returnTo = searchParams.get("returnTo") ?? "/";
+  const referralCode = searchParams.get("ref");
 
   React.useEffect(() => {
     const checkFlag = async () => {
@@ -58,6 +59,7 @@ function SignUpForm() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
+        data: referralCode ? { referral_code: referralCode } : undefined,
       },
     });
     setLoading(false);

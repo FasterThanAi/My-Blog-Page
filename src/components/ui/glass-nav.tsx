@@ -159,6 +159,13 @@ export function GlassNav() {
           SaaS Blog
         </Link>
 
+        <Link
+          href="/notes"
+          className="hidden sm:inline-flex text-13 font-medium text-muted hover:text-accent transition-colors"
+        >
+          Notes
+        </Link>
+
         {/* Right Nav */}
         <div className="flex items-center gap-3">
           {/* Command Palette Trigger */}

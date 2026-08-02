@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { snapshotPostVersionIfDue } from "./post-versions";
 import { syncPostEmbedding } from "@/lib/ai/post-embedding-sync";
+import { sendPostNewsletterEmail } from "@/lib/email";
 
 // Helper to normalize and generate URL-safe slugs
 function slugify(text: string): string {
@@ -276,6 +277,7 @@ export async function publishPostAction(input: unknown) {
   const reading_time_minutes = Math.max(1, Math.ceil(words / 230));
 
   // 3. Determine published_at timestamp
+  const isNewlyPublished = status === "published" && !post.published_at;
   let published_at = post.published_at;
   if (status === "published" && !published_at) {
     published_at = new Date().toISOString();
@@ -373,6 +375,30 @@ export async function publishPostAction(input: unknown) {
 
   // Keep semantic search embeddings in sync (fire-and-forget; never blocks publish)
   syncPostEmbedding(supabase, id).catch(() => {});
+
+  // Ghost-style "post = newsletter": email subscribers the moment a post
+  // goes live for the first time (fire-and-forget; never blocks publish)
+  if (isNewlyPublished) {
+    (async () => {
+      try {
+        const { data: authorProfile } = await supabase
+          .from("profiles")
+          .select("display_name, username")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        await sendPostNewsletterEmail({
+          id,
+          title: post.title || "Untitled",
+          excerpt: excerpt || null,
+          slug,
+          authorName: authorProfile?.display_name || authorProfile?.username || "Anonymous",
+        });
+      } catch (err) {
+        console.error("Post newsletter send error:", err);
+      }
+    })();
+  }
 
   return { success: true, slug };
 }

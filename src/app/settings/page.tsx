@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Camera, Save } from "lucide-react";
+import { Camera, Save, Copy, Check, Award } from "lucide-react";
+import { getMyReferralStatsAction } from "@/app/actions/referrals";
 
 // Validate inputs matching the database constraints
 const settingsSchema = z.object({
@@ -28,6 +29,7 @@ const settingsSchema = z.object({
   ai_assistant_enabled: z.boolean(),
   theme_preference: z.enum(["light", "dark", "system"]),
   email_notifications: z.boolean(),
+  newsletter_subscribed: z.boolean(),
 });
 
 export default function SettingsPage() {
@@ -48,8 +50,12 @@ export default function SettingsPage() {
   const [aiEnabled, setAiEnabled] = React.useState(true);
   const [themePreference, setThemePreference] = React.useState<"light" | "dark" | "system">("system");
   const [emailNotifications, setEmailNotifications] = React.useState(true);
+  const [newsletterSubscribed, setNewsletterSubscribed] = React.useState(false);
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
+  const [referralCount, setReferralCount] = React.useState(0);
+  const [referralBadge, setReferralBadge] = React.useState(false);
+  const [linkCopied, setLinkCopied] = React.useState(false);
 
   React.useEffect(() => {
     async function loadData() {
@@ -78,8 +84,13 @@ export default function SettingsPage() {
         setAiEnabled(profile.ai_assistant_enabled);
         setThemePreference(profile.theme_preference as "light" | "dark" | "system");
         setEmailNotifications(profile.email_notifications ?? true);
+        setNewsletterSubscribed(profile.newsletter_subscribed ?? false);
         setAvatarUrl(profile.avatar_url);
       }
+
+      const stats = await getMyReferralStatsAction();
+      setReferralCount(stats.count);
+      setReferralBadge(stats.hasBadge);
       setLoading(false);
     }
 
@@ -149,6 +160,7 @@ export default function SettingsPage() {
       ai_assistant_enabled: aiEnabled,
       theme_preference: themePreference,
       email_notifications: emailNotifications,
+      newsletter_subscribed: newsletterSubscribed,
     });
 
     if (!validation.success) {
@@ -184,6 +196,7 @@ export default function SettingsPage() {
           ai_assistant_enabled: aiEnabled,
           theme_preference: themePreference,
           email_notifications: emailNotifications,
+          newsletter_subscribed: newsletterSubscribed,
         })
         .eq("id", userId);
 
@@ -327,6 +340,21 @@ export default function SettingsPage() {
                 />
               </div>
 
+              <div className="flex items-center justify-between border-t border-border/40 pt-4">
+                <div className="flex flex-col gap-0.5">
+                  <h3 className="text-15 font-semibold text-text">Newsletter</h3>
+                  <p className="text-13 text-muted">
+                    Get new posts emailed to you as they publish, plus a weekly digest.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={newsletterSubscribed}
+                  onChange={(e) => setNewsletterSubscribed(e.target.checked)}
+                  className="w-5 h-5 rounded-md border-border accent-accent cursor-pointer focus-ring"
+                />
+              </div>
+
               <div className="flex flex-col gap-1.5">
                 <label className="text-13 font-semibold text-text">Theme Preference</label>
                 <select
@@ -338,6 +366,44 @@ export default function SettingsPage() {
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
                 </select>
+              </div>
+            </Card>
+
+            {/* Referral Link Card */}
+            <Card className="flex flex-col gap-4 p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-15 font-semibold text-text">Your Referral Link</h3>
+                {referralBadge && (
+                  <span className="flex items-center gap-1.5 text-11 font-bold uppercase tracking-wider text-accent">
+                    <Award className="w-3.5 h-3.5" />
+                    Referral Champion
+                  </span>
+                )}
+              </div>
+              <p className="text-13 text-muted">
+                Share your link — when someone signs up through it, it counts toward your referral badge.{" "}
+                <strong className="text-text">{referralCount}</strong> referral{referralCount === 1 ? "" : "s"} so far.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={typeof window !== "undefined" ? `${window.location.origin}/auth/sign-up?ref=${username}` : ""}
+                  className="flex-1 text-13"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(`${window.location.origin}/auth/sign-up?ref=${username}`);
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}
+                  className="flex items-center gap-1.5 shrink-0"
+                >
+                  {linkCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {linkCopied ? "Copied" : "Copy"}
+                </Button>
               </div>
             </Card>
 

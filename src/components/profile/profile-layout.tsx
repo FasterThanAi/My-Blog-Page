@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast";
 import { toggleFollowAction } from "@/app/actions/public-posts";
+import { AuthorRecommendations } from "./author-recommendations";
 import {
   Link as LinkIcon,
   Calendar,
@@ -258,25 +259,29 @@ export function ProfileLayout({
             />
           )
         ) : (
-          <Card className="p-6 flex flex-col gap-4 bg-surface border-border select-none">
-            <h3 className="text-17 font-semibold text-text">Bio & Description</h3>
-            <p className="text-15 text-muted leading-relaxed">
-              {profile.bio || "No biography provided by the author."}
-            </p>
-            {profile.website_url && (
-              <div className="flex flex-col gap-1 border-t border-border pt-4 mt-2 text-13">
-                <span className="text-muted">Website Link:</span>
-                <a
-                  href={profile.website_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent hover:underline"
-                >
-                  {profile.website_url}
-                </a>
-              </div>
-            )}
-          </Card>
+          <div className="flex flex-col gap-6">
+            <Card className="p-6 flex flex-col gap-4 bg-surface border-border select-none">
+              <h3 className="text-17 font-semibold text-text">Bio & Description</h3>
+              <p className="text-15 text-muted leading-relaxed">
+                {profile.bio || "No biography provided by the author."}
+              </p>
+              {profile.website_url && (
+                <div className="flex flex-col gap-1 border-t border-border pt-4 mt-2 text-13">
+                  <span className="text-muted">Website Link:</span>
+                  <a
+                    href={profile.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:underline"
+                  >
+                    {profile.website_url}
+                  </a>
+                </div>
+              )}
+            </Card>
+
+            <AuthorRecommendations username={profile.username} isOwnProfile={isOwnProfile} />
+          </div>
         )}
       </div>
     </div>
