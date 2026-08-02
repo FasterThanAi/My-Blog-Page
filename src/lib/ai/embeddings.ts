@@ -1,10 +1,10 @@
 import { env } from "@/lib/env";
 
-const EMBEDDING_MODEL = "text-embedding-004";
+const EMBEDDING_MODEL = "gemini-embedding-001";
 
 /**
  * Generates a 768-dimension embedding vector for the given text using
- * Gemini's text-embedding-004 model. Used to populate post_embeddings for
+ * Gemini's gemini-embedding-001 model. Used to populate post_embeddings for
  * semantic search (RAG chatbot + personalized feed).
  */
 export async function embedText(text: string): Promise<number[]> {
@@ -15,6 +15,7 @@ export async function embedText(text: string): Promise<number[]> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       content: { parts: [{ text: text.slice(0, 8000) }] },
+      outputDimensionality: 768,
     }),
   });
 
