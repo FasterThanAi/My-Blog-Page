@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GlassNav } from "@/components/ui/glass-nav";
 import { ProfileLayout } from "@/components/profile/profile-layout";
+import { computeReadingStreak } from "@/lib/reading-streak";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
@@ -108,6 +109,7 @@ export default async function ProfilePage({ params }: PageProps) {
   const isOwnProfile = user ? user.id === profile.id : false;
   let draftCount = 0;
   let privateCount = 0;
+  let readingStreak = 0;
 
   if (isOwnProfile) {
     const { count: dCount } = await supabase
@@ -124,6 +126,20 @@ export default async function ProfilePage({ params }: PageProps) {
       .eq("status", "published")
       .eq("visibility", "private");
     privateCount = pCount || 0;
+
+    // Reading streak: consecutive days (UTC) with at least one post read past 80%
+    const { data: completedReads } = await supabase
+      .from("reading_history")
+      .select("completed_at")
+      .eq("user_id", profile.id)
+      .not("completed_at", "is", null)
+      .order("completed_at", { ascending: false });
+
+    if (completedReads && completedReads.length > 0) {
+      readingStreak = computeReadingStreak(
+        completedReads.map((r) => r.completed_at as string)
+      );
+    }
   }
 
   // 6. Check follow status connection
@@ -154,6 +170,7 @@ export default async function ProfilePage({ params }: PageProps) {
           followingCount={followingCount || 0}
           draftCount={draftCount}
           privateCount={privateCount}
+          readingStreak={readingStreak}
           initialFollowed={initialFollowed}
           isOwnProfile={isOwnProfile}
         />

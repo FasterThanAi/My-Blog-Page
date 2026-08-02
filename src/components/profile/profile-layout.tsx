@@ -17,6 +17,7 @@ import {
   FileText,
   Lock,
   Heart,
+  Flame,
 } from "lucide-react";
 
 interface PostItem {
@@ -44,6 +45,7 @@ interface ProfileLayoutProps {
   followingCount: number;
   draftCount: number;
   privateCount: number;
+  readingStreak?: number;
   initialFollowed: boolean;
   isOwnProfile: boolean;
 }
@@ -55,6 +57,7 @@ export function ProfileLayout({
   followingCount,
   draftCount,
   privateCount,
+  readingStreak = 0,
   initialFollowed,
   isOwnProfile,
 }: ProfileLayoutProps) {
@@ -168,8 +171,8 @@ export function ProfileLayout({
       </div>
 
       {/* Private/Draft counters for own view only */}
-      {isOwnProfile && (draftCount > 0 || privateCount > 0) && (
-        <div className="flex items-center gap-3 bg-surface/50 border border-border px-4 py-3 rounded-12 text-13 text-muted">
+      {isOwnProfile && (draftCount > 0 || privateCount > 0 || readingStreak > 0) && (
+        <div className="flex items-center gap-3 bg-surface/50 border border-border px-4 py-3 rounded-12 text-13 text-muted flex-wrap">
           <span>Your writing metrics:</span>
           {draftCount > 0 && (
             <span className="flex items-center gap-1 text-accent font-medium">
@@ -181,6 +184,12 @@ export function ProfileLayout({
             <span className="flex items-center gap-1 text-muted font-medium">
               <Lock className="w-3.5 h-3.5" />
               {privateCount} private
+            </span>
+          )}
+          {readingStreak > 0 && (
+            <span className="flex items-center gap-1 text-orange-500 font-medium">
+              <Flame className="w-3.5 h-3.5 fill-current" />
+              {readingStreak}-day reading streak
             </span>
           )}
         </div>

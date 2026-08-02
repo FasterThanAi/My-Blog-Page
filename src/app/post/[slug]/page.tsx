@@ -8,6 +8,8 @@ import { GlassNav } from "@/components/ui/glass-nav";
 import { TiptapRenderer } from "@/lib/renderer";
 import { PostActions } from "@/components/post/post-actions";
 import { ViewIncrementer } from "@/components/post/view-incrementer";
+import { ReadingProgress } from "@/components/post/reading-progress";
+import { AiSummaryCard } from "@/components/post/ai-summary-card";
 import { ArrowLeft } from "lucide-react";
 import { CommentSection } from "@/components/post/comment-section";
 
@@ -147,8 +149,17 @@ export default async function PostDetailPage({ params }: PageProps) {
   let initialLiked = false;
   let initialBookmarked = false;
   let initialFollowed = false;
+  let initialScrollPercent = 0;
 
   if (user) {
+    const { data: progress } = await supabase
+      .from("reading_history")
+      .select("scroll_percent")
+      .eq("user_id", user.id)
+      .eq("post_id", post.id)
+      .maybeSingle();
+    initialScrollPercent = progress?.scroll_percent || 0;
+
     const { data: react } = await supabase
       .from("reactions")
       .select("post_id")
@@ -193,6 +204,15 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   const commentsEnabled = commentsFlag ? commentsFlag.enabled : true;
 
+  // Check AI assistant feature flag (gates the reader-facing summary card)
+  const { data: aiFlag } = await supabase
+    .from("feature_flags")
+    .select("enabled")
+    .eq("key", "ai_assistant")
+    .maybeSingle();
+
+  const aiSummaryEnabled = aiFlag ? aiFlag.enabled : true;
+
   // 5. Fetch tags for this post
   const { data: postTagsData } = await supabase
     .from("post_tags")
@@ -213,6 +233,9 @@ export default async function PostDetailPage({ params }: PageProps) {
 
       {/* View Incrementer Component */}
       <ViewIncrementer postId={post.id} />
+
+      {/* Scroll progress bar + resume-where-you-left-off prompt */}
+      <ReadingProgress postId={post.id} initialScrollPercent={initialScrollPercent} />
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-6 py-12 flex flex-col items-center">
         {/* Back navigation header link */}
@@ -246,6 +269,11 @@ export default async function PostDetailPage({ params }: PageProps) {
           <h1 className={`text-40 md:text-52 font-semibold tracking-tight leading-tight mb-8 ${post.is_hidden ? "text-muted italic select-none" : "text-text"}`}>
             {post.is_hidden ? "[removed by moderator]" : (post.title || "Untitled")}
           </h1>
+
+          {/* AI-generated TL;DR summary card */}
+          {aiSummaryEnabled && !post.is_hidden && (
+            <AiSummaryCard postId={post.id} />
+          )}
 
           {/* Semantic SSR content renderer */}
           <div className="tiptap-reading-page">

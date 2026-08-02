@@ -104,6 +104,37 @@ ${draft}
 `.trim();
 
 /**
+ * CONTRACT FOR TL;DR SUMMARY:
+ * - Receives the full plain-text body of a published post.
+ * - Generates a short one-line TL;DR plus 3-5 bullet takeaways.
+ * - Must return a raw JSON block containing keys "tldr" (string) and "bullets" (array of strings).
+ * - No markdown wrapping, no fluff. Only return valid, parsable JSON.
+ */
+export const summaryPrompt = (body: string) => `
+You are condensing a blog post into a reader-facing summary card.
+
+CRITICAL RULES:
+1. Return your output EXACTLY as a valid JSON object matching this schema:
+   {
+     "tldr": "One sentence, plain-language summary of the whole post (max 160 characters)",
+     "bullets": [
+       "First key takeaway",
+       "Second key takeaway",
+       "Third key takeaway"
+     ]
+   }
+2. Produce between 3 and 5 bullets, each a single concise sentence (max 140 characters).
+3. Base the summary strictly on the content given. Do not invent facts not present in the text.
+4. DO NOT wrap the JSON in markdown code blocks (\`\`\`json).
+5. DO NOT include any explanatory text. Return only the raw JSON string.
+
+Post content:
+"""
+${body}
+"""
+`.trim();
+
+/**
  * CONTRACT FOR ALT TEXT:
  * - Receives description of the image or analysis request.
  * - Must return a short, descriptive alt-text sentence (no fluff, max 120 characters).
